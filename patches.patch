@@ -1,26 +1,199 @@
 Binary files orig/src/electionguard/.DS_Store and build/src/electionguard/.DS_Store differ
 diff -ruN orig/src/electionguard/BigInteger.js build/src/electionguard/BigInteger.js
 --- orig/src/electionguard/BigInteger.js	1970-01-01 01:00:00.000000000 +0100
-+++ build/src/electionguard/BigInteger.js	2020-10-23 19:07:48.000000000 +0200
++++ build/src/electionguard/BigInteger.js	2020-10-23 20:35:55.000000000 +0200
 @@ -0,0 +1 @@
-+var bigInt=function(undefined){"use strict";var BASE=1e7,LOG_BASE=7,MAX_INT=9007199254740992,MAX_INT_ARR=smallToArray(MAX_INT),DEFAULT_ALPHABET="0123456789abcdefghijklmnopqrstuvwxyz";var supportsNativeBigInt=typeof BigInt==="function";function Integer(v,radix,alphabet,caseSensitive){if(typeof v==="undefined")return Integer[0];if(typeof radix!=="undefined")return+radix===10&&!alphabet?parseValue(v):parseBase(v,radix,alphabet,caseSensitive);return parseValue(v)}function BigInteger(value,sign){this.value=value;this.sign=sign;this.isSmall=false}BigInteger.prototype=Object.create(Integer.prototype);function SmallInteger(value){this.value=value;this.sign=value<0;this.isSmall=true}SmallInteger.prototype=Object.create(Integer.prototype);function NativeBigInt(value){this.value=value}NativeBigInt.prototype=Object.create(Integer.prototype);function isPrecise(n){return-MAX_INT<n&&n<MAX_INT}function smallToArray(n){if(n<1e7)return[n];if(n<1e14)return[n%1e7,Math.floor(n/1e7)];return[n%1e7,Math.floor(n/1e7)%1e7,Math.floor(n/1e14)]}function arrayToSmall(arr){trim(arr);var length=arr.length;if(length<4&&compareAbs(arr,MAX_INT_ARR)<0){switch(length){case 0:return 0;case 1:return arr[0];case 2:return arr[0]+arr[1]*BASE;default:return arr[0]+(arr[1]+arr[2]*BASE)*BASE}}return arr}function trim(v){var i=v.length;while(v[--i]===0);v.length=i+1}function createArray(length){var x=new Array(length);var i=-1;while(++i<length){x[i]=0}return x}function truncate(n){if(n>0)return Math.floor(n);return Math.ceil(n)}function add(a,b){var l_a=a.length,l_b=b.length,r=new Array(l_a),carry=0,base=BASE,sum,i;for(i=0;i<l_b;i++){sum=a[i]+b[i]+carry;carry=sum>=base?1:0;r[i]=sum-carry*base}while(i<l_a){sum=a[i]+carry;carry=sum===base?1:0;r[i++]=sum-carry*base}if(carry>0)r.push(carry);return r}function addAny(a,b){if(a.length>=b.length)return add(a,b);return add(b,a)}function addSmall(a,carry){var l=a.length,r=new Array(l),base=BASE,sum,i;for(i=0;i<l;i++){sum=a[i]-base+carry;carry=Math.floor(sum/base);r[i]=sum-carry*base;carry+=1}while(carry>0){r[i++]=carry%base;carry=Math.floor(carry/base)}return r}BigInteger.prototype.add=function(v){var n=parseValue(v);if(this.sign!==n.sign){return this.subtract(n.negate())}var a=this.value,b=n.value;if(n.isSmall){return new BigInteger(addSmall(a,Math.abs(b)),this.sign)}return new BigInteger(addAny(a,b),this.sign)};BigInteger.prototype.plus=BigInteger.prototype.add;SmallInteger.prototype.add=function(v){var n=parseValue(v);var a=this.value;if(a<0!==n.sign){return this.subtract(n.negate())}var b=n.value;if(n.isSmall){if(isPrecise(a+b))return new SmallInteger(a+b);b=smallToArray(Math.abs(b))}return new BigInteger(addSmall(b,Math.abs(a)),a<0)};SmallInteger.prototype.plus=SmallInteger.prototype.add;NativeBigInt.prototype.add=function(v){return new NativeBigInt(this.value+parseValue(v).value)};NativeBigInt.prototype.plus=NativeBigInt.prototype.add;function subtract(a,b){var a_l=a.length,b_l=b.length,r=new Array(a_l),borrow=0,base=BASE,i,difference;for(i=0;i<b_l;i++){difference=a[i]-borrow-b[i];if(difference<0){difference+=base;borrow=1}else borrow=0;r[i]=difference}for(i=b_l;i<a_l;i++){difference=a[i]-borrow;if(difference<0)difference+=base;else{r[i++]=difference;break}r[i]=difference}for(;i<a_l;i++){r[i]=a[i]}trim(r);return r}function subtractAny(a,b,sign){var value;if(compareAbs(a,b)>=0){value=subtract(a,b)}else{value=subtract(b,a);sign=!sign}value=arrayToSmall(value);if(typeof value==="number"){if(sign)value=-value;return new SmallInteger(value)}return new BigInteger(value,sign)}function subtractSmall(a,b,sign){var l=a.length,r=new Array(l),carry=-b,base=BASE,i,difference;for(i=0;i<l;i++){difference=a[i]+carry;carry=Math.floor(difference/base);difference%=base;r[i]=difference<0?difference+base:difference}r=arrayToSmall(r);if(typeof r==="number"){if(sign)r=-r;return new SmallInteger(r)}return new BigInteger(r,sign)}BigInteger.prototype.subtract=function(v){var n=parseValue(v);if(this.sign!==n.sign){return this.add(n.negate())}var a=this.value,b=n.value;if(n.isSmall)return subtractSmall(a,Math.abs(b),this.sign);return subtractAny(a,b,this.sign)};BigInteger.prototype.minus=BigInteger.prototype.subtract;SmallInteger.prototype.subtract=function(v){var n=parseValue(v);var a=this.value;if(a<0!==n.sign){return this.add(n.negate())}var b=n.value;if(n.isSmall){return new SmallInteger(a-b)}return subtractSmall(b,Math.abs(a),a>=0)};SmallInteger.prototype.minus=SmallInteger.prototype.subtract;NativeBigInt.prototype.subtract=function(v){return new NativeBigInt(this.value-parseValue(v).value)};NativeBigInt.prototype.minus=NativeBigInt.prototype.subtract;BigInteger.prototype.negate=function(){return new BigInteger(this.value,!this.sign)};SmallInteger.prototype.negate=function(){var sign=this.sign;var small=new SmallInteger(-this.value);small.sign=!sign;return small};NativeBigInt.prototype.negate=function(){return new NativeBigInt(-this.value)};BigInteger.prototype.abs=function(){return new BigInteger(this.value,false)};SmallInteger.prototype.abs=function(){return new SmallInteger(Math.abs(this.value))};NativeBigInt.prototype.abs=function(){return new NativeBigInt(this.value>=0?this.value:-this.value)};function multiplyLong(a,b){var a_l=a.length,b_l=b.length,l=a_l+b_l,r=createArray(l),base=BASE,product,carry,i,a_i,b_j;for(i=0;i<a_l;++i){a_i=a[i];for(var j=0;j<b_l;++j){b_j=b[j];product=a_i*b_j+r[i+j];carry=Math.floor(product/base);r[i+j]=product-carry*base;r[i+j+1]+=carry}}trim(r);return r}function multiplySmall(a,b){var l=a.length,r=new Array(l),base=BASE,carry=0,product,i;for(i=0;i<l;i++){product=a[i]*b+carry;carry=Math.floor(product/base);r[i]=product-carry*base}while(carry>0){r[i++]=carry%base;carry=Math.floor(carry/base)}return r}function shiftLeft(x,n){var r=[];while(n-- >0)r.push(0);return r.concat(x)}function multiplyKaratsuba(x,y){var n=Math.max(x.length,y.length);if(n<=30)return multiplyLong(x,y);n=Math.ceil(n/2);var b=x.slice(n),a=x.slice(0,n),d=y.slice(n),c=y.slice(0,n);var ac=multiplyKaratsuba(a,c),bd=multiplyKaratsuba(b,d),abcd=multiplyKaratsuba(addAny(a,b),addAny(c,d));var product=addAny(addAny(ac,shiftLeft(subtract(subtract(abcd,ac),bd),n)),shiftLeft(bd,2*n));trim(product);return product}function useKaratsuba(l1,l2){return-.012*l1-.012*l2+15e-6*l1*l2>0}BigInteger.prototype.multiply=function(v){var n=parseValue(v),a=this.value,b=n.value,sign=this.sign!==n.sign,abs;if(n.isSmall){if(b===0)return Integer[0];if(b===1)return this;if(b===-1)return this.negate();abs=Math.abs(b);if(abs<BASE){return new BigInteger(multiplySmall(a,abs),sign)}b=smallToArray(abs)}if(useKaratsuba(a.length,b.length))return new BigInteger(multiplyKaratsuba(a,b),sign);return new BigInteger(multiplyLong(a,b),sign)};BigInteger.prototype.times=BigInteger.prototype.multiply;function multiplySmallAndArray(a,b,sign){if(a<BASE){return new BigInteger(multiplySmall(b,a),sign)}return new BigInteger(multiplyLong(b,smallToArray(a)),sign)}SmallInteger.prototype._multiplyBySmall=function(a){if(isPrecise(a.value*this.value)){return new SmallInteger(a.value*this.value)}return multiplySmallAndArray(Math.abs(a.value),smallToArray(Math.abs(this.value)),this.sign!==a.sign)};BigInteger.prototype._multiplyBySmall=function(a){if(a.value===0)return Integer[0];if(a.value===1)return this;if(a.value===-1)return this.negate();return multiplySmallAndArray(Math.abs(a.value),this.value,this.sign!==a.sign)};SmallInteger.prototype.multiply=function(v){return parseValue(v)._multiplyBySmall(this)};SmallInteger.prototype.times=SmallInteger.prototype.multiply;NativeBigInt.prototype.multiply=function(v){return new NativeBigInt(this.value*parseValue(v).value)};NativeBigInt.prototype.times=NativeBigInt.prototype.multiply;function square(a){var l=a.length,r=createArray(l+l),base=BASE,product,carry,i,a_i,a_j;for(i=0;i<l;i++){a_i=a[i];carry=0-a_i*a_i;for(var j=i;j<l;j++){a_j=a[j];product=2*(a_i*a_j)+r[i+j]+carry;carry=Math.floor(product/base);r[i+j]=product-carry*base}r[i+l]=carry}trim(r);return r}BigInteger.prototype.square=function(){return new BigInteger(square(this.value),false)};SmallInteger.prototype.square=function(){var value=this.value*this.value;if(isPrecise(value))return new SmallInteger(value);return new BigInteger(square(smallToArray(Math.abs(this.value))),false)};NativeBigInt.prototype.square=function(v){return new NativeBigInt(this.value*this.value)};function divMod1(a,b){var a_l=a.length,b_l=b.length,base=BASE,result=createArray(b.length),divisorMostSignificantDigit=b[b_l-1],lambda=Math.ceil(base/(2*divisorMostSignificantDigit)),remainder=multiplySmall(a,lambda),divisor=multiplySmall(b,lambda),quotientDigit,shift,carry,borrow,i,l,q;if(remainder.length<=a_l)remainder.push(0);divisor.push(0);divisorMostSignificantDigit=divisor[b_l-1];for(shift=a_l-b_l;shift>=0;shift--){quotientDigit=base-1;if(remainder[shift+b_l]!==divisorMostSignificantDigit){quotientDigit=Math.floor((remainder[shift+b_l]*base+remainder[shift+b_l-1])/divisorMostSignificantDigit)}carry=0;borrow=0;l=divisor.length;for(i=0;i<l;i++){carry+=quotientDigit*divisor[i];q=Math.floor(carry/base);borrow+=remainder[shift+i]-(carry-q*base);carry=q;if(borrow<0){remainder[shift+i]=borrow+base;borrow=-1}else{remainder[shift+i]=borrow;borrow=0}}while(borrow!==0){quotientDigit-=1;carry=0;for(i=0;i<l;i++){carry+=remainder[shift+i]-base+divisor[i];if(carry<0){remainder[shift+i]=carry+base;carry=0}else{remainder[shift+i]=carry;carry=1}}borrow+=carry}result[shift]=quotientDigit}remainder=divModSmall(remainder,lambda)[0];return[arrayToSmall(result),arrayToSmall(remainder)]}function divMod2(a,b){var a_l=a.length,b_l=b.length,result=[],part=[],base=BASE,guess,xlen,highx,highy,check;while(a_l){part.unshift(a[--a_l]);trim(part);if(compareAbs(part,b)<0){result.push(0);continue}xlen=part.length;highx=part[xlen-1]*base+part[xlen-2];highy=b[b_l-1]*base+b[b_l-2];if(xlen>b_l){highx=(highx+1)*base}guess=Math.ceil(highx/highy);do{check=multiplySmall(b,guess);if(compareAbs(check,part)<=0)break;guess--}while(guess);result.push(guess);part=subtract(part,check)}result.reverse();return[arrayToSmall(result),arrayToSmall(part)]}function divModSmall(value,lambda){var length=value.length,quotient=createArray(length),base=BASE,i,q,remainder,divisor;remainder=0;for(i=length-1;i>=0;--i){divisor=remainder*base+value[i];q=truncate(divisor/lambda);remainder=divisor-q*lambda;quotient[i]=q|0}return[quotient,remainder|0]}function divModAny(self,v){var value,n=parseValue(v);if(supportsNativeBigInt){return[new NativeBigInt(self.value/n.value),new NativeBigInt(self.value%n.value)]}var a=self.value,b=n.value;var quotient;if(b===0)throw new Error("Cannot divide by zero");if(self.isSmall){if(n.isSmall){return[new SmallInteger(truncate(a/b)),new SmallInteger(a%b)]}return[Integer[0],self]}if(n.isSmall){if(b===1)return[self,Integer[0]];if(b==-1)return[self.negate(),Integer[0]];var abs=Math.abs(b);if(abs<BASE){value=divModSmall(a,abs);quotient=arrayToSmall(value[0]);var remainder=value[1];if(self.sign)remainder=-remainder;if(typeof quotient==="number"){if(self.sign!==n.sign)quotient=-quotient;return[new SmallInteger(quotient),new SmallInteger(remainder)]}return[new BigInteger(quotient,self.sign!==n.sign),new SmallInteger(remainder)]}b=smallToArray(abs)}var comparison=compareAbs(a,b);if(comparison===-1)return[Integer[0],self];if(comparison===0)return[Integer[self.sign===n.sign?1:-1],Integer[0]];if(a.length+b.length<=200)value=divMod1(a,b);else value=divMod2(a,b);quotient=value[0];var qSign=self.sign!==n.sign,mod=value[1],mSign=self.sign;if(typeof quotient==="number"){if(qSign)quotient=-quotient;quotient=new SmallInteger(quotient)}else quotient=new BigInteger(quotient,qSign);if(typeof mod==="number"){if(mSign)mod=-mod;mod=new SmallInteger(mod)}else mod=new BigInteger(mod,mSign);return[quotient,mod]}BigInteger.prototype.divmod=function(v){var result=divModAny(this,v);return{quotient:result[0],remainder:result[1]}};NativeBigInt.prototype.divmod=SmallInteger.prototype.divmod=BigInteger.prototype.divmod;BigInteger.prototype.divide=function(v){return divModAny(this,v)[0]};NativeBigInt.prototype.over=NativeBigInt.prototype.divide=SmallInteger.prototype.over=SmallInteger.prototype.divide=BigInteger.prototype.over=BigInteger.prototype.divide;BigInteger.prototype.mod=function(v){return divModAny(this,v)[1]};NativeBigInt.prototype.mod=NativeBigInt.prototype.remainder=SmallInteger.prototype.remainder=SmallInteger.prototype.mod=BigInteger.prototype.remainder=BigInteger.prototype.mod;BigInteger.prototype.pow=function(v){var n=parseValue(v),a=this.value,b=n.value,value,x,y;if(b===0)return Integer[1];if(a===0)return Integer[0];if(a===1)return Integer[1];if(a===-1)return n.isEven()?Integer[1]:Integer[-1];if(n.sign){return Integer[0]}if(!n.isSmall)throw new Error("The exponent "+n.toString()+" is too large.");if(this.isSmall){if(isPrecise(value=Math.pow(a,b)))return new SmallInteger(truncate(value))}x=this;y=Integer[1];while(true){if(b&1===1){y=y.times(x);--b}if(b===0)break;b/=2;x=x.square()}return y};SmallInteger.prototype.pow=BigInteger.prototype.pow;var pow;if(supportsNativeBigInt){pow=eval("(a,b)=>a**b")}NativeBigInt.prototype.pow=function(v){var n=parseValue(v);var a=this.value,b=n.value;if(b===BigInt(0))return Integer[1];if(a===BigInt(0))return Integer[0];if(a===BigInt(1))return Integer[1];if(a===BigInt(-1))return n.isEven()?Integer[1]:Integer[-1];if(n.isNegative())return new NativeBigInt(BigInt(0));return new NativeBigInt(pow(a,b))};BigInteger.prototype.modPow=function(exp,mod){exp=parseValue(exp);mod=parseValue(mod);if(mod.isZero())throw new Error("Cannot take modPow with modulus 0");var r=Integer[1],base=this.mod(mod);while(exp.isPositive()){if(base.isZero())return Integer[0];if(exp.isOdd())r=r.multiply(base).mod(mod);exp=exp.divide(2);base=base.square().mod(mod)}return r};NativeBigInt.prototype.modPow=SmallInteger.prototype.modPow=BigInteger.prototype.modPow;function compareAbs(a,b){if(a.length!==b.length){return a.length>b.length?1:-1}for(var i=a.length-1;i>=0;i--){if(a[i]!==b[i])return a[i]>b[i]?1:-1}return 0}BigInteger.prototype.compareAbs=function(v){var n=parseValue(v),a=this.value,b=n.value;if(n.isSmall)return 1;return compareAbs(a,b)};SmallInteger.prototype.compareAbs=function(v){var n=parseValue(v),a=Math.abs(this.value),b=n.value;if(n.isSmall){b=Math.abs(b);return a===b?0:a>b?1:-1}return-1};NativeBigInt.prototype.compareAbs=function(v){var a=this.value;var b=parseValue(v).value;a=a>=0?a:-a;b=b>=0?b:-b;return a===b?0:a>b?1:-1};BigInteger.prototype.compare=function(v){if(v===Infinity){return-1}if(v===-Infinity){return 1}var n=parseValue(v),a=this.value,b=n.value;if(this.sign!==n.sign){return n.sign?1:-1}if(n.isSmall){return this.sign?-1:1}return compareAbs(a,b)*(this.sign?-1:1)};BigInteger.prototype.compareTo=BigInteger.prototype.compare;SmallInteger.prototype.compare=function(v){if(v===Infinity){return-1}if(v===-Infinity){return 1}var n=parseValue(v),a=this.value,b=n.value;if(n.isSmall){return a==b?0:a>b?1:-1}if(a<0!==n.sign){return a<0?-1:1}return a<0?1:-1};SmallInteger.prototype.compareTo=SmallInteger.prototype.compare;NativeBigInt.prototype.compare=function(v){if(v===Infinity){return-1}if(v===-Infinity){return 1}var a=this.value;var b=parseValue(v).value;return a===b?0:a>b?1:-1};NativeBigInt.prototype.compareTo=NativeBigInt.prototype.compare;BigInteger.prototype.equals=function(v){return this.compare(v)===0};NativeBigInt.prototype.eq=NativeBigInt.prototype.equals=SmallInteger.prototype.eq=SmallInteger.prototype.equals=BigInteger.prototype.eq=BigInteger.prototype.equals;BigInteger.prototype.notEquals=function(v){return this.compare(v)!==0};NativeBigInt.prototype.neq=NativeBigInt.prototype.notEquals=SmallInteger.prototype.neq=SmallInteger.prototype.notEquals=BigInteger.prototype.neq=BigInteger.prototype.notEquals;BigInteger.prototype.greater=function(v){return this.compare(v)>0};NativeBigInt.prototype.gt=NativeBigInt.prototype.greater=SmallInteger.prototype.gt=SmallInteger.prototype.greater=BigInteger.prototype.gt=BigInteger.prototype.greater;BigInteger.prototype.lesser=function(v){return this.compare(v)<0};NativeBigInt.prototype.lt=NativeBigInt.prototype.lesser=SmallInteger.prototype.lt=SmallInteger.prototype.lesser=BigInteger.prototype.lt=BigInteger.prototype.lesser;BigInteger.prototype.greaterOrEquals=function(v){return this.compare(v)>=0};NativeBigInt.prototype.geq=NativeBigInt.prototype.greaterOrEquals=SmallInteger.prototype.geq=SmallInteger.prototype.greaterOrEquals=BigInteger.prototype.geq=BigInteger.prototype.greaterOrEquals;BigInteger.prototype.lesserOrEquals=function(v){return this.compare(v)<=0};NativeBigInt.prototype.leq=NativeBigInt.prototype.lesserOrEquals=SmallInteger.prototype.leq=SmallInteger.prototype.lesserOrEquals=BigInteger.prototype.leq=BigInteger.prototype.lesserOrEquals;BigInteger.prototype.isEven=function(){return(this.value[0]&1)===0};SmallInteger.prototype.isEven=function(){return(this.value&1)===0};NativeBigInt.prototype.isEven=function(){return(this.value&BigInt(1))===BigInt(0)};BigInteger.prototype.isOdd=function(){return(this.value[0]&1)===1};SmallInteger.prototype.isOdd=function(){return(this.value&1)===1};NativeBigInt.prototype.isOdd=function(){return(this.value&BigInt(1))===BigInt(1)};BigInteger.prototype.isPositive=function(){return!this.sign};SmallInteger.prototype.isPositive=function(){return this.value>0};NativeBigInt.prototype.isPositive=SmallInteger.prototype.isPositive;BigInteger.prototype.isNegative=function(){return this.sign};SmallInteger.prototype.isNegative=function(){return this.value<0};NativeBigInt.prototype.isNegative=SmallInteger.prototype.isNegative;BigInteger.prototype.isUnit=function(){return false};SmallInteger.prototype.isUnit=function(){return Math.abs(this.value)===1};NativeBigInt.prototype.isUnit=function(){return this.abs().value===BigInt(1)};BigInteger.prototype.isZero=function(){return false};SmallInteger.prototype.isZero=function(){return this.value===0};NativeBigInt.prototype.isZero=function(){return this.value===BigInt(0)};BigInteger.prototype.isDivisibleBy=function(v){var n=parseValue(v);if(n.isZero())return false;if(n.isUnit())return true;if(n.compareAbs(2)===0)return this.isEven();return this.mod(n).isZero()};NativeBigInt.prototype.isDivisibleBy=SmallInteger.prototype.isDivisibleBy=BigInteger.prototype.isDivisibleBy;function isBasicPrime(v){var n=v.abs();if(n.isUnit())return false;if(n.equals(2)||n.equals(3)||n.equals(5))return true;if(n.isEven()||n.isDivisibleBy(3)||n.isDivisibleBy(5))return false;if(n.lesser(49))return true}function millerRabinTest(n,a){var nPrev=n.prev(),b=nPrev,r=0,d,t,i,x;while(b.isEven())b=b.divide(2),r++;next:for(i=0;i<a.length;i++){if(n.lesser(a[i]))continue;x=bigInt(a[i]).modPow(b,n);if(x.isUnit()||x.equals(nPrev))continue;for(d=r-1;d!=0;d--){x=x.square().mod(n);if(x.isUnit())return false;if(x.equals(nPrev))continue next}return false}return true}BigInteger.prototype.isPrime=function(strict){var isPrime=isBasicPrime(this);if(isPrime!==undefined)return isPrime;var n=this.abs();var bits=n.bitLength();if(bits<=64)return millerRabinTest(n,[2,325,9375,28178,450775,9780504,1795265022]);var logN=Math.log(2)*bits.toJSNumber();var t=Math.ceil(strict===true?2*Math.pow(logN,2):logN);for(var a=[],i=0;i<t;i++){a.push(bigInt(i+2))}return millerRabinTest(n,a)};NativeBigInt.prototype.isPrime=SmallInteger.prototype.isPrime=BigInteger.prototype.isPrime;BigInteger.prototype.isProbablePrime=function(iterations){var isPrime=isBasicPrime(this);if(isPrime!==undefined)return isPrime;var n=this.abs();var t=iterations===undefined?5:iterations;for(var a=[],i=0;i<t;i++){a.push(bigInt.randBetween(2,n.minus(2)))}return millerRabinTest(n,a)};NativeBigInt.prototype.isProbablePrime=SmallInteger.prototype.isProbablePrime=BigInteger.prototype.isProbablePrime;BigInteger.prototype.modInv=function(n){var t=bigInt.zero,newT=bigInt.one,r=parseValue(n),newR=this.abs(),q,lastT,lastR;while(!newR.isZero()){q=r.divide(newR);lastT=t;lastR=r;t=newT;r=newR;newT=lastT.subtract(q.multiply(newT));newR=lastR.subtract(q.multiply(newR))}if(!r.isUnit())throw new Error(this.toString()+" and "+n.toString()+" are not co-prime");if(t.compare(0)===-1){t=t.add(n)}if(this.isNegative()){return t.negate()}return t};NativeBigInt.prototype.modInv=SmallInteger.prototype.modInv=BigInteger.prototype.modInv;BigInteger.prototype.next=function(){var value=this.value;if(this.sign){return subtractSmall(value,1,this.sign)}return new BigInteger(addSmall(value,1),this.sign)};SmallInteger.prototype.next=function(){var value=this.value;if(value+1<MAX_INT)return new SmallInteger(value+1);return new BigInteger(MAX_INT_ARR,false)};NativeBigInt.prototype.next=function(){return new NativeBigInt(this.value+BigInt(1))};BigInteger.prototype.prev=function(){var value=this.value;if(this.sign){return new BigInteger(addSmall(value,1),true)}return subtractSmall(value,1,this.sign)};SmallInteger.prototype.prev=function(){var value=this.value;if(value-1>-MAX_INT)return new SmallInteger(value-1);return new BigInteger(MAX_INT_ARR,true)};NativeBigInt.prototype.prev=function(){return new NativeBigInt(this.value-BigInt(1))};var powersOfTwo=[1];while(2*powersOfTwo[powersOfTwo.length-1]<=BASE)powersOfTwo.push(2*powersOfTwo[powersOfTwo.length-1]);var powers2Length=powersOfTwo.length,highestPower2=powersOfTwo[powers2Length-1];function shift_isSmall(n){return Math.abs(n)<=BASE}BigInteger.prototype.shiftLeft=function(v){var n=parseValue(v).toJSNumber();if(!shift_isSmall(n)){throw new Error(String(n)+" is too large for shifting.")}if(n<0)return this.shiftRight(-n);var result=this;if(result.isZero())return result;while(n>=powers2Length){result=result.multiply(highestPower2);n-=powers2Length-1}return result.multiply(powersOfTwo[n])};NativeBigInt.prototype.shiftLeft=SmallInteger.prototype.shiftLeft=BigInteger.prototype.shiftLeft;BigInteger.prototype.shiftRight=function(v){var remQuo;var n=parseValue(v).toJSNumber();if(!shift_isSmall(n)){throw new Error(String(n)+" is too large for shifting.")}if(n<0)return this.shiftLeft(-n);var result=this;while(n>=powers2Length){if(result.isZero()||result.isNegative()&&result.isUnit())return result;remQuo=divModAny(result,highestPower2);result=remQuo[1].isNegative()?remQuo[0].prev():remQuo[0];n-=powers2Length-1}remQuo=divModAny(result,powersOfTwo[n]);return remQuo[1].isNegative()?remQuo[0].prev():remQuo[0]};NativeBigInt.prototype.shiftRight=SmallInteger.prototype.shiftRight=BigInteger.prototype.shiftRight;function bitwise(x,y,fn){y=parseValue(y);var xSign=x.isNegative(),ySign=y.isNegative();var xRem=xSign?x.not():x,yRem=ySign?y.not():y;var xDigit=0,yDigit=0;var xDivMod=null,yDivMod=null;var result=[];while(!xRem.isZero()||!yRem.isZero()){xDivMod=divModAny(xRem,highestPower2);xDigit=xDivMod[1].toJSNumber();if(xSign){xDigit=highestPower2-1-xDigit}yDivMod=divModAny(yRem,highestPower2);yDigit=yDivMod[1].toJSNumber();if(ySign){yDigit=highestPower2-1-yDigit}xRem=xDivMod[0];yRem=yDivMod[0];result.push(fn(xDigit,yDigit))}var sum=fn(xSign?1:0,ySign?1:0)!==0?bigInt(-1):bigInt(0);for(var i=result.length-1;i>=0;i-=1){sum=sum.multiply(highestPower2).add(bigInt(result[i]))}return sum}BigInteger.prototype.not=function(){return this.negate().prev()};NativeBigInt.prototype.not=SmallInteger.prototype.not=BigInteger.prototype.not;BigInteger.prototype.and=function(n){return bitwise(this,n,function(a,b){return a&b})};NativeBigInt.prototype.and=SmallInteger.prototype.and=BigInteger.prototype.and;BigInteger.prototype.or=function(n){return bitwise(this,n,function(a,b){return a|b})};NativeBigInt.prototype.or=SmallInteger.prototype.or=BigInteger.prototype.or;BigInteger.prototype.xor=function(n){return bitwise(this,n,function(a,b){return a^b})};NativeBigInt.prototype.xor=SmallInteger.prototype.xor=BigInteger.prototype.xor;var LOBMASK_I=1<<30,LOBMASK_BI=(BASE&-BASE)*(BASE&-BASE)|LOBMASK_I;function roughLOB(n){var v=n.value,x=typeof v==="number"?v|LOBMASK_I:typeof v==="bigint"?v|BigInt(LOBMASK_I):v[0]+v[1]*BASE|LOBMASK_BI;return x&-x}function integerLogarithm(value,base){if(base.compareTo(value)<=0){var tmp=integerLogarithm(value,base.square(base));var p=tmp.p;var e=tmp.e;var t=p.multiply(base);return t.compareTo(value)<=0?{p:t,e:e*2+1}:{p:p,e:e*2}}return{p:bigInt(1),e:0}}BigInteger.prototype.bitLength=function(){var n=this;if(n.compareTo(bigInt(0))<0){n=n.negate().subtract(bigInt(1))}if(n.compareTo(bigInt(0))===0){return bigInt(0)}return bigInt(integerLogarithm(n,bigInt(2)).e).add(bigInt(1))};NativeBigInt.prototype.bitLength=SmallInteger.prototype.bitLength=BigInteger.prototype.bitLength;function max(a,b){a=parseValue(a);b=parseValue(b);return a.greater(b)?a:b}function min(a,b){a=parseValue(a);b=parseValue(b);return a.lesser(b)?a:b}function gcd(a,b){a=parseValue(a).abs();b=parseValue(b).abs();if(a.equals(b))return a;if(a.isZero())return b;if(b.isZero())return a;var c=Integer[1],d,t;while(a.isEven()&&b.isEven()){d=min(roughLOB(a),roughLOB(b));a=a.divide(d);b=b.divide(d);c=c.multiply(d)}while(a.isEven()){a=a.divide(roughLOB(a))}do{while(b.isEven()){b=b.divide(roughLOB(b))}if(a.greater(b)){t=b;b=a;a=t}b=b.subtract(a)}while(!b.isZero());return c.isUnit()?a:a.multiply(c)}function lcm(a,b){a=parseValue(a).abs();b=parseValue(b).abs();return a.divide(gcd(a,b)).multiply(b)}function randBetween(a,b){a=parseValue(a);b=parseValue(b);var low=min(a,b),high=max(a,b);var range=high.subtract(low).add(1);if(range.isSmall)return low.add(Math.floor(Math.random()*range));var digits=toBase(range,BASE).value;var result=[],restricted=true;for(var i=0;i<digits.length;i++){var top=restricted?digits[i]:BASE;var digit=truncate(Math.random()*top);result.push(digit);if(digit<top)restricted=false}return low.add(Integer.fromArray(result,BASE,false))}var parseBase=function(text,base,alphabet,caseSensitive){alphabet=alphabet||DEFAULT_ALPHABET;text=String(text);if(!caseSensitive){text=text.toLowerCase();alphabet=alphabet.toLowerCase()}var length=text.length;var i;var absBase=Math.abs(base);var alphabetValues={};for(i=0;i<alphabet.length;i++){alphabetValues[alphabet[i]]=i}for(i=0;i<length;i++){var c=text[i];if(c==="-")continue;if(c in alphabetValues){if(alphabetValues[c]>=absBase){if(c==="1"&&absBase===1)continue;throw new Error(c+" is not a valid digit in base "+base+".")}}}base=parseValue(base);var digits=[];var isNegative=text[0]==="-";for(i=isNegative?1:0;i<text.length;i++){var c=text[i];if(c in alphabetValues)digits.push(parseValue(alphabetValues[c]));else if(c==="<"){var start=i;do{i++}while(text[i]!==">"&&i<text.length);digits.push(parseValue(text.slice(start+1,i)))}else throw new Error(c+" is not a valid character")}return parseBaseFromArray(digits,base,isNegative)};function parseBaseFromArray(digits,base,isNegative){var val=Integer[0],pow=Integer[1],i;for(i=digits.length-1;i>=0;i--){val=val.add(digits[i].times(pow));pow=pow.times(base)}return isNegative?val.negate():val}function stringify(digit,alphabet){alphabet=alphabet||DEFAULT_ALPHABET;if(digit<alphabet.length){return alphabet[digit]}return"<"+digit+">"}function toBase(n,base){base=bigInt(base);if(base.isZero()){if(n.isZero())return{value:[0],isNegative:false};throw new Error("Cannot convert nonzero numbers to base 0.")}if(base.equals(-1)){if(n.isZero())return{value:[0],isNegative:false};if(n.isNegative())return{value:[].concat.apply([],Array.apply(null,Array(-n.toJSNumber())).map(Array.prototype.valueOf,[1,0])),isNegative:false};var arr=Array.apply(null,Array(n.toJSNumber()-1)).map(Array.prototype.valueOf,[0,1]);arr.unshift([1]);return{value:[].concat.apply([],arr),isNegative:false}}var neg=false;if(n.isNegative()&&base.isPositive()){neg=true;n=n.abs()}if(base.isUnit()){if(n.isZero())return{value:[0],isNegative:false};return{value:Array.apply(null,Array(n.toJSNumber())).map(Number.prototype.valueOf,1),isNegative:neg}}var out=[];var left=n,divmod;while(left.isNegative()||left.compareAbs(base)>=0){divmod=left.divmod(base);left=divmod.quotient;var digit=divmod.remainder;if(digit.isNegative()){digit=base.minus(digit).abs();left=left.next()}out.push(digit.toJSNumber())}out.push(left.toJSNumber());return{value:out.reverse(),isNegative:neg}}function toBaseString(n,base,alphabet){var arr=toBase(n,base);return(arr.isNegative?"-":"")+arr.value.map(function(x){return stringify(x,alphabet)}).join("")}BigInteger.prototype.toArray=function(radix){return toBase(this,radix)};SmallInteger.prototype.toArray=function(radix){return toBase(this,radix)};NativeBigInt.prototype.toArray=function(radix){return toBase(this,radix)};BigInteger.prototype.toString=function(radix,alphabet){if(radix===undefined)radix=10;if(radix!==10)return toBaseString(this,radix,alphabet);var v=this.value,l=v.length,str=String(v[--l]),zeros="0000000",digit;while(--l>=0){digit=String(v[l]);str+=zeros.slice(digit.length)+digit}var sign=this.sign?"-":"";return sign+str};SmallInteger.prototype.toString=function(radix,alphabet){if(radix===undefined)radix=10;if(radix!=10)return toBaseString(this,radix,alphabet);return String(this.value)};NativeBigInt.prototype.toString=SmallInteger.prototype.toString;NativeBigInt.prototype.toJSON=BigInteger.prototype.toJSON=SmallInteger.prototype.toJSON=function(){return this.toString()};BigInteger.prototype.valueOf=function(){return parseInt(this.toString(),10)};BigInteger.prototype.toJSNumber=BigInteger.prototype.valueOf;SmallInteger.prototype.valueOf=function(){return this.value};SmallInteger.prototype.toJSNumber=SmallInteger.prototype.valueOf;NativeBigInt.prototype.valueOf=NativeBigInt.prototype.toJSNumber=function(){return parseInt(this.toString(),10)};function parseStringValue(v){if(isPrecise(+v)){var x=+v;if(x===truncate(x))return supportsNativeBigInt?new NativeBigInt(BigInt(x)):new SmallInteger(x);throw new Error("Invalid integer: "+v)}var sign=v[0]==="-";if(sign)v=v.slice(1);var split=v.split(/e/i);if(split.length>2)throw new Error("Invalid integer: "+split.join("e"));if(split.length===2){var exp=split[1];if(exp[0]==="+")exp=exp.slice(1);exp=+exp;if(exp!==truncate(exp)||!isPrecise(exp))throw new Error("Invalid integer: "+exp+" is not a valid exponent.");var text=split[0];var decimalPlace=text.indexOf(".");if(decimalPlace>=0){exp-=text.length-decimalPlace-1;text=text.slice(0,decimalPlace)+text.slice(decimalPlace+1)}if(exp<0)throw new Error("Cannot include negative exponent part for integers");text+=new Array(exp+1).join("0");v=text}var isValid=/^([0-9][0-9]*)$/.test(v);if(!isValid)throw new Error("Invalid integer: "+v);if(supportsNativeBigInt){return new NativeBigInt(BigInt(sign?"-"+v:v))}var r=[],max=v.length,l=LOG_BASE,min=max-l;while(max>0){r.push(+v.slice(min,max));min-=l;if(min<0)min=0;max-=l}trim(r);return new BigInteger(r,sign)}function parseNumberValue(v){if(supportsNativeBigInt){return new NativeBigInt(BigInt(v))}if(isPrecise(v)){if(v!==truncate(v))throw new Error(v+" is not an integer.");return new SmallInteger(v)}return parseStringValue(v.toString())}function parseValue(v){if(typeof v==="number"){return parseNumberValue(v)}if(typeof v==="string"){return parseStringValue(v)}if(typeof v==="bigint"){return new NativeBigInt(v)}return v}for(var i=0;i<1e3;i++){Integer[i]=parseValue(i);if(i>0)Integer[-i]=parseValue(-i)}Integer.one=Integer[1];Integer.zero=Integer[0];Integer.minusOne=Integer[-1];Integer.max=max;Integer.min=min;Integer.gcd=gcd;Integer.lcm=lcm;Integer.isInstance=function(x){return x instanceof BigInteger||x instanceof SmallInteger||x instanceof NativeBigInt};Integer.randBetween=randBetween;Integer.fromArray=function(digits,base,isNegative){return parseBaseFromArray(digits.map(parseValue),parseValue(base||10),isNegative)};return Integer}();if(typeof module!=="undefined"&&module.hasOwnProperty("exports")){module.exports=bigInt}if(typeof define==="function"&&define.amd){define("big-integer",[],function(){return bigInt})}
++export var bigInt=function(undefined){"use strict";var BASE=1e7,LOG_BASE=7,MAX_INT=9007199254740992,MAX_INT_ARR=smallToArray(MAX_INT),DEFAULT_ALPHABET="0123456789abcdefghijklmnopqrstuvwxyz";var supportsNativeBigInt=typeof BigInt==="function";function Integer(v,radix,alphabet,caseSensitive){if(typeof v==="undefined")return Integer[0];if(typeof radix!=="undefined")return+radix===10&&!alphabet?parseValue(v):parseBase(v,radix,alphabet,caseSensitive);return parseValue(v)}function BigInteger(value,sign){this.value=value;this.sign=sign;this.isSmall=false}BigInteger.prototype=Object.create(Integer.prototype);function SmallInteger(value){this.value=value;this.sign=value<0;this.isSmall=true}SmallInteger.prototype=Object.create(Integer.prototype);function NativeBigInt(value){this.value=value}NativeBigInt.prototype=Object.create(Integer.prototype);function isPrecise(n){return-MAX_INT<n&&n<MAX_INT}function smallToArray(n){if(n<1e7)return[n];if(n<1e14)return[n%1e7,Math.floor(n/1e7)];return[n%1e7,Math.floor(n/1e7)%1e7,Math.floor(n/1e14)]}function arrayToSmall(arr){trim(arr);var length=arr.length;if(length<4&&compareAbs(arr,MAX_INT_ARR)<0){switch(length){case 0:return 0;case 1:return arr[0];case 2:return arr[0]+arr[1]*BASE;default:return arr[0]+(arr[1]+arr[2]*BASE)*BASE}}return arr}function trim(v){var i=v.length;while(v[--i]===0);v.length=i+1}function createArray(length){var x=new Array(length);var i=-1;while(++i<length){x[i]=0}return x}function truncate(n){if(n>0)return Math.floor(n);return Math.ceil(n)}function add(a,b){var l_a=a.length,l_b=b.length,r=new Array(l_a),carry=0,base=BASE,sum,i;for(i=0;i<l_b;i++){sum=a[i]+b[i]+carry;carry=sum>=base?1:0;r[i]=sum-carry*base}while(i<l_a){sum=a[i]+carry;carry=sum===base?1:0;r[i++]=sum-carry*base}if(carry>0)r.push(carry);return r}function addAny(a,b){if(a.length>=b.length)return add(a,b);return add(b,a)}function addSmall(a,carry){var l=a.length,r=new Array(l),base=BASE,sum,i;for(i=0;i<l;i++){sum=a[i]-base+carry;carry=Math.floor(sum/base);r[i]=sum-carry*base;carry+=1}while(carry>0){r[i++]=carry%base;carry=Math.floor(carry/base)}return r}BigInteger.prototype.add=function(v){var n=parseValue(v);if(this.sign!==n.sign){return this.subtract(n.negate())}var a=this.value,b=n.value;if(n.isSmall){return new BigInteger(addSmall(a,Math.abs(b)),this.sign)}return new BigInteger(addAny(a,b),this.sign)};BigInteger.prototype.plus=BigInteger.prototype.add;SmallInteger.prototype.add=function(v){var n=parseValue(v);var a=this.value;if(a<0!==n.sign){return this.subtract(n.negate())}var b=n.value;if(n.isSmall){if(isPrecise(a+b))return new SmallInteger(a+b);b=smallToArray(Math.abs(b))}return new BigInteger(addSmall(b,Math.abs(a)),a<0)};SmallInteger.prototype.plus=SmallInteger.prototype.add;NativeBigInt.prototype.add=function(v){return new NativeBigInt(this.value+parseValue(v).value)};NativeBigInt.prototype.plus=NativeBigInt.prototype.add;function subtract(a,b){var a_l=a.length,b_l=b.length,r=new Array(a_l),borrow=0,base=BASE,i,difference;for(i=0;i<b_l;i++){difference=a[i]-borrow-b[i];if(difference<0){difference+=base;borrow=1}else borrow=0;r[i]=difference}for(i=b_l;i<a_l;i++){difference=a[i]-borrow;if(difference<0)difference+=base;else{r[i++]=difference;break}r[i]=difference}for(;i<a_l;i++){r[i]=a[i]}trim(r);return r}function subtractAny(a,b,sign){var value;if(compareAbs(a,b)>=0){value=subtract(a,b)}else{value=subtract(b,a);sign=!sign}value=arrayToSmall(value);if(typeof value==="number"){if(sign)value=-value;return new SmallInteger(value)}return new BigInteger(value,sign)}function subtractSmall(a,b,sign){var l=a.length,r=new Array(l),carry=-b,base=BASE,i,difference;for(i=0;i<l;i++){difference=a[i]+carry;carry=Math.floor(difference/base);difference%=base;r[i]=difference<0?difference+base:difference}r=arrayToSmall(r);if(typeof r==="number"){if(sign)r=-r;return new SmallInteger(r)}return new BigInteger(r,sign)}BigInteger.prototype.subtract=function(v){var n=parseValue(v);if(this.sign!==n.sign){return this.add(n.negate())}var a=this.value,b=n.value;if(n.isSmall)return subtractSmall(a,Math.abs(b),this.sign);return subtractAny(a,b,this.sign)};BigInteger.prototype.minus=BigInteger.prototype.subtract;SmallInteger.prototype.subtract=function(v){var n=parseValue(v);var a=this.value;if(a<0!==n.sign){return this.add(n.negate())}var b=n.value;if(n.isSmall){return new SmallInteger(a-b)}return subtractSmall(b,Math.abs(a),a>=0)};SmallInteger.prototype.minus=SmallInteger.prototype.subtract;NativeBigInt.prototype.subtract=function(v){return new NativeBigInt(this.value-parseValue(v).value)};NativeBigInt.prototype.minus=NativeBigInt.prototype.subtract;BigInteger.prototype.negate=function(){return new BigInteger(this.value,!this.sign)};SmallInteger.prototype.negate=function(){var sign=this.sign;var small=new SmallInteger(-this.value);small.sign=!sign;return small};NativeBigInt.prototype.negate=function(){return new NativeBigInt(-this.value)};BigInteger.prototype.abs=function(){return new BigInteger(this.value,false)};SmallInteger.prototype.abs=function(){return new SmallInteger(Math.abs(this.value))};NativeBigInt.prototype.abs=function(){return new NativeBigInt(this.value>=0?this.value:-this.value)};function multiplyLong(a,b){var a_l=a.length,b_l=b.length,l=a_l+b_l,r=createArray(l),base=BASE,product,carry,i,a_i,b_j;for(i=0;i<a_l;++i){a_i=a[i];for(var j=0;j<b_l;++j){b_j=b[j];product=a_i*b_j+r[i+j];carry=Math.floor(product/base);r[i+j]=product-carry*base;r[i+j+1]+=carry}}trim(r);return r}function multiplySmall(a,b){var l=a.length,r=new Array(l),base=BASE,carry=0,product,i;for(i=0;i<l;i++){product=a[i]*b+carry;carry=Math.floor(product/base);r[i]=product-carry*base}while(carry>0){r[i++]=carry%base;carry=Math.floor(carry/base)}return r}function shiftLeft(x,n){var r=[];while(n-- >0)r.push(0);return r.concat(x)}function multiplyKaratsuba(x,y){var n=Math.max(x.length,y.length);if(n<=30)return multiplyLong(x,y);n=Math.ceil(n/2);var b=x.slice(n),a=x.slice(0,n),d=y.slice(n),c=y.slice(0,n);var ac=multiplyKaratsuba(a,c),bd=multiplyKaratsuba(b,d),abcd=multiplyKaratsuba(addAny(a,b),addAny(c,d));var product=addAny(addAny(ac,shiftLeft(subtract(subtract(abcd,ac),bd),n)),shiftLeft(bd,2*n));trim(product);return product}function useKaratsuba(l1,l2){return-.012*l1-.012*l2+15e-6*l1*l2>0}BigInteger.prototype.multiply=function(v){var n=parseValue(v),a=this.value,b=n.value,sign=this.sign!==n.sign,abs;if(n.isSmall){if(b===0)return Integer[0];if(b===1)return this;if(b===-1)return this.negate();abs=Math.abs(b);if(abs<BASE){return new BigInteger(multiplySmall(a,abs),sign)}b=smallToArray(abs)}if(useKaratsuba(a.length,b.length))return new BigInteger(multiplyKaratsuba(a,b),sign);return new BigInteger(multiplyLong(a,b),sign)};BigInteger.prototype.times=BigInteger.prototype.multiply;function multiplySmallAndArray(a,b,sign){if(a<BASE){return new BigInteger(multiplySmall(b,a),sign)}return new BigInteger(multiplyLong(b,smallToArray(a)),sign)}SmallInteger.prototype._multiplyBySmall=function(a){if(isPrecise(a.value*this.value)){return new SmallInteger(a.value*this.value)}return multiplySmallAndArray(Math.abs(a.value),smallToArray(Math.abs(this.value)),this.sign!==a.sign)};BigInteger.prototype._multiplyBySmall=function(a){if(a.value===0)return Integer[0];if(a.value===1)return this;if(a.value===-1)return this.negate();return multiplySmallAndArray(Math.abs(a.value),this.value,this.sign!==a.sign)};SmallInteger.prototype.multiply=function(v){return parseValue(v)._multiplyBySmall(this)};SmallInteger.prototype.times=SmallInteger.prototype.multiply;NativeBigInt.prototype.multiply=function(v){return new NativeBigInt(this.value*parseValue(v).value)};NativeBigInt.prototype.times=NativeBigInt.prototype.multiply;function square(a){var l=a.length,r=createArray(l+l),base=BASE,product,carry,i,a_i,a_j;for(i=0;i<l;i++){a_i=a[i];carry=0-a_i*a_i;for(var j=i;j<l;j++){a_j=a[j];product=2*(a_i*a_j)+r[i+j]+carry;carry=Math.floor(product/base);r[i+j]=product-carry*base}r[i+l]=carry}trim(r);return r}BigInteger.prototype.square=function(){return new BigInteger(square(this.value),false)};SmallInteger.prototype.square=function(){var value=this.value*this.value;if(isPrecise(value))return new SmallInteger(value);return new BigInteger(square(smallToArray(Math.abs(this.value))),false)};NativeBigInt.prototype.square=function(v){return new NativeBigInt(this.value*this.value)};function divMod1(a,b){var a_l=a.length,b_l=b.length,base=BASE,result=createArray(b.length),divisorMostSignificantDigit=b[b_l-1],lambda=Math.ceil(base/(2*divisorMostSignificantDigit)),remainder=multiplySmall(a,lambda),divisor=multiplySmall(b,lambda),quotientDigit,shift,carry,borrow,i,l,q;if(remainder.length<=a_l)remainder.push(0);divisor.push(0);divisorMostSignificantDigit=divisor[b_l-1];for(shift=a_l-b_l;shift>=0;shift--){quotientDigit=base-1;if(remainder[shift+b_l]!==divisorMostSignificantDigit){quotientDigit=Math.floor((remainder[shift+b_l]*base+remainder[shift+b_l-1])/divisorMostSignificantDigit)}carry=0;borrow=0;l=divisor.length;for(i=0;i<l;i++){carry+=quotientDigit*divisor[i];q=Math.floor(carry/base);borrow+=remainder[shift+i]-(carry-q*base);carry=q;if(borrow<0){remainder[shift+i]=borrow+base;borrow=-1}else{remainder[shift+i]=borrow;borrow=0}}while(borrow!==0){quotientDigit-=1;carry=0;for(i=0;i<l;i++){carry+=remainder[shift+i]-base+divisor[i];if(carry<0){remainder[shift+i]=carry+base;carry=0}else{remainder[shift+i]=carry;carry=1}}borrow+=carry}result[shift]=quotientDigit}remainder=divModSmall(remainder,lambda)[0];return[arrayToSmall(result),arrayToSmall(remainder)]}function divMod2(a,b){var a_l=a.length,b_l=b.length,result=[],part=[],base=BASE,guess,xlen,highx,highy,check;while(a_l){part.unshift(a[--a_l]);trim(part);if(compareAbs(part,b)<0){result.push(0);continue}xlen=part.length;highx=part[xlen-1]*base+part[xlen-2];highy=b[b_l-1]*base+b[b_l-2];if(xlen>b_l){highx=(highx+1)*base}guess=Math.ceil(highx/highy);do{check=multiplySmall(b,guess);if(compareAbs(check,part)<=0)break;guess--}while(guess);result.push(guess);part=subtract(part,check)}result.reverse();return[arrayToSmall(result),arrayToSmall(part)]}function divModSmall(value,lambda){var length=value.length,quotient=createArray(length),base=BASE,i,q,remainder,divisor;remainder=0;for(i=length-1;i>=0;--i){divisor=remainder*base+value[i];q=truncate(divisor/lambda);remainder=divisor-q*lambda;quotient[i]=q|0}return[quotient,remainder|0]}function divModAny(self,v){var value,n=parseValue(v);if(supportsNativeBigInt){return[new NativeBigInt(self.value/n.value),new NativeBigInt(self.value%n.value)]}var a=self.value,b=n.value;var quotient;if(b===0)throw new Error("Cannot divide by zero");if(self.isSmall){if(n.isSmall){return[new SmallInteger(truncate(a/b)),new SmallInteger(a%b)]}return[Integer[0],self]}if(n.isSmall){if(b===1)return[self,Integer[0]];if(b==-1)return[self.negate(),Integer[0]];var abs=Math.abs(b);if(abs<BASE){value=divModSmall(a,abs);quotient=arrayToSmall(value[0]);var remainder=value[1];if(self.sign)remainder=-remainder;if(typeof quotient==="number"){if(self.sign!==n.sign)quotient=-quotient;return[new SmallInteger(quotient),new SmallInteger(remainder)]}return[new BigInteger(quotient,self.sign!==n.sign),new SmallInteger(remainder)]}b=smallToArray(abs)}var comparison=compareAbs(a,b);if(comparison===-1)return[Integer[0],self];if(comparison===0)return[Integer[self.sign===n.sign?1:-1],Integer[0]];if(a.length+b.length<=200)value=divMod1(a,b);else value=divMod2(a,b);quotient=value[0];var qSign=self.sign!==n.sign,mod=value[1],mSign=self.sign;if(typeof quotient==="number"){if(qSign)quotient=-quotient;quotient=new SmallInteger(quotient)}else quotient=new BigInteger(quotient,qSign);if(typeof mod==="number"){if(mSign)mod=-mod;mod=new SmallInteger(mod)}else mod=new BigInteger(mod,mSign);return[quotient,mod]}BigInteger.prototype.divmod=function(v){var result=divModAny(this,v);return{quotient:result[0],remainder:result[1]}};NativeBigInt.prototype.divmod=SmallInteger.prototype.divmod=BigInteger.prototype.divmod;BigInteger.prototype.divide=function(v){return divModAny(this,v)[0]};NativeBigInt.prototype.over=NativeBigInt.prototype.divide=SmallInteger.prototype.over=SmallInteger.prototype.divide=BigInteger.prototype.over=BigInteger.prototype.divide;BigInteger.prototype.mod=function(v){return divModAny(this,v)[1]};NativeBigInt.prototype.mod=NativeBigInt.prototype.remainder=SmallInteger.prototype.remainder=SmallInteger.prototype.mod=BigInteger.prototype.remainder=BigInteger.prototype.mod;BigInteger.prototype.pow=function(v){var n=parseValue(v),a=this.value,b=n.value,value,x,y;if(b===0)return Integer[1];if(a===0)return Integer[0];if(a===1)return Integer[1];if(a===-1)return n.isEven()?Integer[1]:Integer[-1];if(n.sign){return Integer[0]}if(!n.isSmall)throw new Error("The exponent "+n.toString()+" is too large.");if(this.isSmall){if(isPrecise(value=Math.pow(a,b)))return new SmallInteger(truncate(value))}x=this;y=Integer[1];while(true){if(b&1===1){y=y.times(x);--b}if(b===0)break;b/=2;x=x.square()}return y};SmallInteger.prototype.pow=BigInteger.prototype.pow;var pow;if(supportsNativeBigInt){pow=eval("(a,b)=>a**b")}NativeBigInt.prototype.pow=function(v){var n=parseValue(v);var a=this.value,b=n.value;if(b===BigInt(0))return Integer[1];if(a===BigInt(0))return Integer[0];if(a===BigInt(1))return Integer[1];if(a===BigInt(-1))return n.isEven()?Integer[1]:Integer[-1];if(n.isNegative())return new NativeBigInt(BigInt(0));return new NativeBigInt(pow(a,b))};BigInteger.prototype.modPow=function(exp,mod){exp=parseValue(exp);mod=parseValue(mod);if(mod.isZero())throw new Error("Cannot take modPow with modulus 0");var r=Integer[1],base=this.mod(mod);while(exp.isPositive()){if(base.isZero())return Integer[0];if(exp.isOdd())r=r.multiply(base).mod(mod);exp=exp.divide(2);base=base.square().mod(mod)}return r};NativeBigInt.prototype.modPow=SmallInteger.prototype.modPow=BigInteger.prototype.modPow;function compareAbs(a,b){if(a.length!==b.length){return a.length>b.length?1:-1}for(var i=a.length-1;i>=0;i--){if(a[i]!==b[i])return a[i]>b[i]?1:-1}return 0}BigInteger.prototype.compareAbs=function(v){var n=parseValue(v),a=this.value,b=n.value;if(n.isSmall)return 1;return compareAbs(a,b)};SmallInteger.prototype.compareAbs=function(v){var n=parseValue(v),a=Math.abs(this.value),b=n.value;if(n.isSmall){b=Math.abs(b);return a===b?0:a>b?1:-1}return-1};NativeBigInt.prototype.compareAbs=function(v){var a=this.value;var b=parseValue(v).value;a=a>=0?a:-a;b=b>=0?b:-b;return a===b?0:a>b?1:-1};BigInteger.prototype.compare=function(v){if(v===Infinity){return-1}if(v===-Infinity){return 1}var n=parseValue(v),a=this.value,b=n.value;if(this.sign!==n.sign){return n.sign?1:-1}if(n.isSmall){return this.sign?-1:1}return compareAbs(a,b)*(this.sign?-1:1)};BigInteger.prototype.compareTo=BigInteger.prototype.compare;SmallInteger.prototype.compare=function(v){if(v===Infinity){return-1}if(v===-Infinity){return 1}var n=parseValue(v),a=this.value,b=n.value;if(n.isSmall){return a==b?0:a>b?1:-1}if(a<0!==n.sign){return a<0?-1:1}return a<0?1:-1};SmallInteger.prototype.compareTo=SmallInteger.prototype.compare;NativeBigInt.prototype.compare=function(v){if(v===Infinity){return-1}if(v===-Infinity){return 1}var a=this.value;var b=parseValue(v).value;return a===b?0:a>b?1:-1};NativeBigInt.prototype.compareTo=NativeBigInt.prototype.compare;BigInteger.prototype.equals=function(v){return this.compare(v)===0};NativeBigInt.prototype.eq=NativeBigInt.prototype.equals=SmallInteger.prototype.eq=SmallInteger.prototype.equals=BigInteger.prototype.eq=BigInteger.prototype.equals;BigInteger.prototype.notEquals=function(v){return this.compare(v)!==0};NativeBigInt.prototype.neq=NativeBigInt.prototype.notEquals=SmallInteger.prototype.neq=SmallInteger.prototype.notEquals=BigInteger.prototype.neq=BigInteger.prototype.notEquals;BigInteger.prototype.greater=function(v){return this.compare(v)>0};NativeBigInt.prototype.gt=NativeBigInt.prototype.greater=SmallInteger.prototype.gt=SmallInteger.prototype.greater=BigInteger.prototype.gt=BigInteger.prototype.greater;BigInteger.prototype.lesser=function(v){return this.compare(v)<0};NativeBigInt.prototype.lt=NativeBigInt.prototype.lesser=SmallInteger.prototype.lt=SmallInteger.prototype.lesser=BigInteger.prototype.lt=BigInteger.prototype.lesser;BigInteger.prototype.greaterOrEquals=function(v){return this.compare(v)>=0};NativeBigInt.prototype.geq=NativeBigInt.prototype.greaterOrEquals=SmallInteger.prototype.geq=SmallInteger.prototype.greaterOrEquals=BigInteger.prototype.geq=BigInteger.prototype.greaterOrEquals;BigInteger.prototype.lesserOrEquals=function(v){return this.compare(v)<=0};NativeBigInt.prototype.leq=NativeBigInt.prototype.lesserOrEquals=SmallInteger.prototype.leq=SmallInteger.prototype.lesserOrEquals=BigInteger.prototype.leq=BigInteger.prototype.lesserOrEquals;BigInteger.prototype.isEven=function(){return(this.value[0]&1)===0};SmallInteger.prototype.isEven=function(){return(this.value&1)===0};NativeBigInt.prototype.isEven=function(){return(this.value&BigInt(1))===BigInt(0)};BigInteger.prototype.isOdd=function(){return(this.value[0]&1)===1};SmallInteger.prototype.isOdd=function(){return(this.value&1)===1};NativeBigInt.prototype.isOdd=function(){return(this.value&BigInt(1))===BigInt(1)};BigInteger.prototype.isPositive=function(){return!this.sign};SmallInteger.prototype.isPositive=function(){return this.value>0};NativeBigInt.prototype.isPositive=SmallInteger.prototype.isPositive;BigInteger.prototype.isNegative=function(){return this.sign};SmallInteger.prototype.isNegative=function(){return this.value<0};NativeBigInt.prototype.isNegative=SmallInteger.prototype.isNegative;BigInteger.prototype.isUnit=function(){return false};SmallInteger.prototype.isUnit=function(){return Math.abs(this.value)===1};NativeBigInt.prototype.isUnit=function(){return this.abs().value===BigInt(1)};BigInteger.prototype.isZero=function(){return false};SmallInteger.prototype.isZero=function(){return this.value===0};NativeBigInt.prototype.isZero=function(){return this.value===BigInt(0)};BigInteger.prototype.isDivisibleBy=function(v){var n=parseValue(v);if(n.isZero())return false;if(n.isUnit())return true;if(n.compareAbs(2)===0)return this.isEven();return this.mod(n).isZero()};NativeBigInt.prototype.isDivisibleBy=SmallInteger.prototype.isDivisibleBy=BigInteger.prototype.isDivisibleBy;function isBasicPrime(v){var n=v.abs();if(n.isUnit())return false;if(n.equals(2)||n.equals(3)||n.equals(5))return true;if(n.isEven()||n.isDivisibleBy(3)||n.isDivisibleBy(5))return false;if(n.lesser(49))return true}function millerRabinTest(n,a){var nPrev=n.prev(),b=nPrev,r=0,d,t,i,x;while(b.isEven())b=b.divide(2),r++;next:for(i=0;i<a.length;i++){if(n.lesser(a[i]))continue;x=bigInt(a[i]).modPow(b,n);if(x.isUnit()||x.equals(nPrev))continue;for(d=r-1;d!=0;d--){x=x.square().mod(n);if(x.isUnit())return false;if(x.equals(nPrev))continue next}return false}return true}BigInteger.prototype.isPrime=function(strict){var isPrime=isBasicPrime(this);if(isPrime!==undefined)return isPrime;var n=this.abs();var bits=n.bitLength();if(bits<=64)return millerRabinTest(n,[2,325,9375,28178,450775,9780504,1795265022]);var logN=Math.log(2)*bits.toJSNumber();var t=Math.ceil(strict===true?2*Math.pow(logN,2):logN);for(var a=[],i=0;i<t;i++){a.push(bigInt(i+2))}return millerRabinTest(n,a)};NativeBigInt.prototype.isPrime=SmallInteger.prototype.isPrime=BigInteger.prototype.isPrime;BigInteger.prototype.isProbablePrime=function(iterations){var isPrime=isBasicPrime(this);if(isPrime!==undefined)return isPrime;var n=this.abs();var t=iterations===undefined?5:iterations;for(var a=[],i=0;i<t;i++){a.push(bigInt.randBetween(2,n.minus(2)))}return millerRabinTest(n,a)};NativeBigInt.prototype.isProbablePrime=SmallInteger.prototype.isProbablePrime=BigInteger.prototype.isProbablePrime;BigInteger.prototype.modInv=function(n){var t=bigInt.zero,newT=bigInt.one,r=parseValue(n),newR=this.abs(),q,lastT,lastR;while(!newR.isZero()){q=r.divide(newR);lastT=t;lastR=r;t=newT;r=newR;newT=lastT.subtract(q.multiply(newT));newR=lastR.subtract(q.multiply(newR))}if(!r.isUnit())throw new Error(this.toString()+" and "+n.toString()+" are not co-prime");if(t.compare(0)===-1){t=t.add(n)}if(this.isNegative()){return t.negate()}return t};NativeBigInt.prototype.modInv=SmallInteger.prototype.modInv=BigInteger.prototype.modInv;BigInteger.prototype.next=function(){var value=this.value;if(this.sign){return subtractSmall(value,1,this.sign)}return new BigInteger(addSmall(value,1),this.sign)};SmallInteger.prototype.next=function(){var value=this.value;if(value+1<MAX_INT)return new SmallInteger(value+1);return new BigInteger(MAX_INT_ARR,false)};NativeBigInt.prototype.next=function(){return new NativeBigInt(this.value+BigInt(1))};BigInteger.prototype.prev=function(){var value=this.value;if(this.sign){return new BigInteger(addSmall(value,1),true)}return subtractSmall(value,1,this.sign)};SmallInteger.prototype.prev=function(){var value=this.value;if(value-1>-MAX_INT)return new SmallInteger(value-1);return new BigInteger(MAX_INT_ARR,true)};NativeBigInt.prototype.prev=function(){return new NativeBigInt(this.value-BigInt(1))};var powersOfTwo=[1];while(2*powersOfTwo[powersOfTwo.length-1]<=BASE)powersOfTwo.push(2*powersOfTwo[powersOfTwo.length-1]);var powers2Length=powersOfTwo.length,highestPower2=powersOfTwo[powers2Length-1];function shift_isSmall(n){return Math.abs(n)<=BASE}BigInteger.prototype.shiftLeft=function(v){var n=parseValue(v).toJSNumber();if(!shift_isSmall(n)){throw new Error(String(n)+" is too large for shifting.")}if(n<0)return this.shiftRight(-n);var result=this;if(result.isZero())return result;while(n>=powers2Length){result=result.multiply(highestPower2);n-=powers2Length-1}return result.multiply(powersOfTwo[n])};NativeBigInt.prototype.shiftLeft=SmallInteger.prototype.shiftLeft=BigInteger.prototype.shiftLeft;BigInteger.prototype.shiftRight=function(v){var remQuo;var n=parseValue(v).toJSNumber();if(!shift_isSmall(n)){throw new Error(String(n)+" is too large for shifting.")}if(n<0)return this.shiftLeft(-n);var result=this;while(n>=powers2Length){if(result.isZero()||result.isNegative()&&result.isUnit())return result;remQuo=divModAny(result,highestPower2);result=remQuo[1].isNegative()?remQuo[0].prev():remQuo[0];n-=powers2Length-1}remQuo=divModAny(result,powersOfTwo[n]);return remQuo[1].isNegative()?remQuo[0].prev():remQuo[0]};NativeBigInt.prototype.shiftRight=SmallInteger.prototype.shiftRight=BigInteger.prototype.shiftRight;function bitwise(x,y,fn){y=parseValue(y);var xSign=x.isNegative(),ySign=y.isNegative();var xRem=xSign?x.not():x,yRem=ySign?y.not():y;var xDigit=0,yDigit=0;var xDivMod=null,yDivMod=null;var result=[];while(!xRem.isZero()||!yRem.isZero()){xDivMod=divModAny(xRem,highestPower2);xDigit=xDivMod[1].toJSNumber();if(xSign){xDigit=highestPower2-1-xDigit}yDivMod=divModAny(yRem,highestPower2);yDigit=yDivMod[1].toJSNumber();if(ySign){yDigit=highestPower2-1-yDigit}xRem=xDivMod[0];yRem=yDivMod[0];result.push(fn(xDigit,yDigit))}var sum=fn(xSign?1:0,ySign?1:0)!==0?bigInt(-1):bigInt(0);for(var i=result.length-1;i>=0;i-=1){sum=sum.multiply(highestPower2).add(bigInt(result[i]))}return sum}BigInteger.prototype.not=function(){return this.negate().prev()};NativeBigInt.prototype.not=SmallInteger.prototype.not=BigInteger.prototype.not;BigInteger.prototype.and=function(n){return bitwise(this,n,function(a,b){return a&b})};NativeBigInt.prototype.and=SmallInteger.prototype.and=BigInteger.prototype.and;BigInteger.prototype.or=function(n){return bitwise(this,n,function(a,b){return a|b})};NativeBigInt.prototype.or=SmallInteger.prototype.or=BigInteger.prototype.or;BigInteger.prototype.xor=function(n){return bitwise(this,n,function(a,b){return a^b})};NativeBigInt.prototype.xor=SmallInteger.prototype.xor=BigInteger.prototype.xor;var LOBMASK_I=1<<30,LOBMASK_BI=(BASE&-BASE)*(BASE&-BASE)|LOBMASK_I;function roughLOB(n){var v=n.value,x=typeof v==="number"?v|LOBMASK_I:typeof v==="bigint"?v|BigInt(LOBMASK_I):v[0]+v[1]*BASE|LOBMASK_BI;return x&-x}function integerLogarithm(value,base){if(base.compareTo(value)<=0){var tmp=integerLogarithm(value,base.square(base));var p=tmp.p;var e=tmp.e;var t=p.multiply(base);return t.compareTo(value)<=0?{p:t,e:e*2+1}:{p:p,e:e*2}}return{p:bigInt(1),e:0}}BigInteger.prototype.bitLength=function(){var n=this;if(n.compareTo(bigInt(0))<0){n=n.negate().subtract(bigInt(1))}if(n.compareTo(bigInt(0))===0){return bigInt(0)}return bigInt(integerLogarithm(n,bigInt(2)).e).add(bigInt(1))};NativeBigInt.prototype.bitLength=SmallInteger.prototype.bitLength=BigInteger.prototype.bitLength;function max(a,b){a=parseValue(a);b=parseValue(b);return a.greater(b)?a:b}function min(a,b){a=parseValue(a);b=parseValue(b);return a.lesser(b)?a:b}function gcd(a,b){a=parseValue(a).abs();b=parseValue(b).abs();if(a.equals(b))return a;if(a.isZero())return b;if(b.isZero())return a;var c=Integer[1],d,t;while(a.isEven()&&b.isEven()){d=min(roughLOB(a),roughLOB(b));a=a.divide(d);b=b.divide(d);c=c.multiply(d)}while(a.isEven()){a=a.divide(roughLOB(a))}do{while(b.isEven()){b=b.divide(roughLOB(b))}if(a.greater(b)){t=b;b=a;a=t}b=b.subtract(a)}while(!b.isZero());return c.isUnit()?a:a.multiply(c)}function lcm(a,b){a=parseValue(a).abs();b=parseValue(b).abs();return a.divide(gcd(a,b)).multiply(b)}function randBetween(a,b){a=parseValue(a);b=parseValue(b);var low=min(a,b),high=max(a,b);var range=high.subtract(low).add(1);if(range.isSmall)return low.add(Math.floor(Math.random()*range));var digits=toBase(range,BASE).value;var result=[],restricted=true;for(var i=0;i<digits.length;i++){var top=restricted?digits[i]:BASE;var digit=truncate(Math.random()*top);result.push(digit);if(digit<top)restricted=false}return low.add(Integer.fromArray(result,BASE,false))}var parseBase=function(text,base,alphabet,caseSensitive){alphabet=alphabet||DEFAULT_ALPHABET;text=String(text);if(!caseSensitive){text=text.toLowerCase();alphabet=alphabet.toLowerCase()}var length=text.length;var i;var absBase=Math.abs(base);var alphabetValues={};for(i=0;i<alphabet.length;i++){alphabetValues[alphabet[i]]=i}for(i=0;i<length;i++){var c=text[i];if(c==="-")continue;if(c in alphabetValues){if(alphabetValues[c]>=absBase){if(c==="1"&&absBase===1)continue;throw new Error(c+" is not a valid digit in base "+base+".")}}}base=parseValue(base);var digits=[];var isNegative=text[0]==="-";for(i=isNegative?1:0;i<text.length;i++){var c=text[i];if(c in alphabetValues)digits.push(parseValue(alphabetValues[c]));else if(c==="<"){var start=i;do{i++}while(text[i]!==">"&&i<text.length);digits.push(parseValue(text.slice(start+1,i)))}else throw new Error(c+" is not a valid character")}return parseBaseFromArray(digits,base,isNegative)};function parseBaseFromArray(digits,base,isNegative){var val=Integer[0],pow=Integer[1],i;for(i=digits.length-1;i>=0;i--){val=val.add(digits[i].times(pow));pow=pow.times(base)}return isNegative?val.negate():val}function stringify(digit,alphabet){alphabet=alphabet||DEFAULT_ALPHABET;if(digit<alphabet.length){return alphabet[digit]}return"<"+digit+">"}function toBase(n,base){base=bigInt(base);if(base.isZero()){if(n.isZero())return{value:[0],isNegative:false};throw new Error("Cannot convert nonzero numbers to base 0.")}if(base.equals(-1)){if(n.isZero())return{value:[0],isNegative:false};if(n.isNegative())return{value:[].concat.apply([],Array.apply(null,Array(-n.toJSNumber())).map(Array.prototype.valueOf,[1,0])),isNegative:false};var arr=Array.apply(null,Array(n.toJSNumber()-1)).map(Array.prototype.valueOf,[0,1]);arr.unshift([1]);return{value:[].concat.apply([],arr),isNegative:false}}var neg=false;if(n.isNegative()&&base.isPositive()){neg=true;n=n.abs()}if(base.isUnit()){if(n.isZero())return{value:[0],isNegative:false};return{value:Array.apply(null,Array(n.toJSNumber())).map(Number.prototype.valueOf,1),isNegative:neg}}var out=[];var left=n,divmod;while(left.isNegative()||left.compareAbs(base)>=0){divmod=left.divmod(base);left=divmod.quotient;var digit=divmod.remainder;if(digit.isNegative()){digit=base.minus(digit).abs();left=left.next()}out.push(digit.toJSNumber())}out.push(left.toJSNumber());return{value:out.reverse(),isNegative:neg}}function toBaseString(n,base,alphabet){var arr=toBase(n,base);return(arr.isNegative?"-":"")+arr.value.map(function(x){return stringify(x,alphabet)}).join("")}BigInteger.prototype.toArray=function(radix){return toBase(this,radix)};SmallInteger.prototype.toArray=function(radix){return toBase(this,radix)};NativeBigInt.prototype.toArray=function(radix){return toBase(this,radix)};BigInteger.prototype.toString=function(radix,alphabet){if(radix===undefined)radix=10;if(radix!==10)return toBaseString(this,radix,alphabet);var v=this.value,l=v.length,str=String(v[--l]),zeros="0000000",digit;while(--l>=0){digit=String(v[l]);str+=zeros.slice(digit.length)+digit}var sign=this.sign?"-":"";return sign+str};SmallInteger.prototype.toString=function(radix,alphabet){if(radix===undefined)radix=10;if(radix!=10)return toBaseString(this,radix,alphabet);return String(this.value)};NativeBigInt.prototype.toString=SmallInteger.prototype.toString;NativeBigInt.prototype.toJSON=BigInteger.prototype.toJSON=SmallInteger.prototype.toJSON=function(){return this.toString()};BigInteger.prototype.valueOf=function(){return parseInt(this.toString(),10)};BigInteger.prototype.toJSNumber=BigInteger.prototype.valueOf;SmallInteger.prototype.valueOf=function(){return this.value};SmallInteger.prototype.toJSNumber=SmallInteger.prototype.valueOf;NativeBigInt.prototype.valueOf=NativeBigInt.prototype.toJSNumber=function(){return parseInt(this.toString(),10)};function parseStringValue(v){if(isPrecise(+v)){var x=+v;if(x===truncate(x))return supportsNativeBigInt?new NativeBigInt(BigInt(x)):new SmallInteger(x);throw new Error("Invalid integer: "+v)}var sign=v[0]==="-";if(sign)v=v.slice(1);var split=v.split(/e/i);if(split.length>2)throw new Error("Invalid integer: "+split.join("e"));if(split.length===2){var exp=split[1];if(exp[0]==="+")exp=exp.slice(1);exp=+exp;if(exp!==truncate(exp)||!isPrecise(exp))throw new Error("Invalid integer: "+exp+" is not a valid exponent.");var text=split[0];var decimalPlace=text.indexOf(".");if(decimalPlace>=0){exp-=text.length-decimalPlace-1;text=text.slice(0,decimalPlace)+text.slice(decimalPlace+1)}if(exp<0)throw new Error("Cannot include negative exponent part for integers");text+=new Array(exp+1).join("0");v=text}var isValid=/^([0-9][0-9]*)$/.test(v);if(!isValid)throw new Error("Invalid integer: "+v);if(supportsNativeBigInt){return new NativeBigInt(BigInt(sign?"-"+v:v))}var r=[],max=v.length,l=LOG_BASE,min=max-l;while(max>0){r.push(+v.slice(min,max));min-=l;if(min<0)min=0;max-=l}trim(r);return new BigInteger(r,sign)}function parseNumberValue(v){if(supportsNativeBigInt){return new NativeBigInt(BigInt(v))}if(isPrecise(v)){if(v!==truncate(v))throw new Error(v+" is not an integer.");return new SmallInteger(v)}return parseStringValue(v.toString())}function parseValue(v){if(typeof v==="number"){return parseNumberValue(v)}if(typeof v==="string"){return parseStringValue(v)}if(typeof v==="bigint"){return new NativeBigInt(v)}return v}for(var i=0;i<1e3;i++){Integer[i]=parseValue(i);if(i>0)Integer[-i]=parseValue(-i)}Integer.one=Integer[1];Integer.zero=Integer[0];Integer.minusOne=Integer[-1];Integer.max=max;Integer.min=min;Integer.gcd=gcd;Integer.lcm=lcm;Integer.isInstance=function(x){return x instanceof BigInteger||x instanceof SmallInteger||x instanceof NativeBigInt};Integer.randBetween=randBetween;Integer.fromArray=function(digits,base,isNegative){return parseBaseFromArray(digits.map(parseValue),parseValue(base||10),isNegative)};return Integer}();if(typeof module!=="undefined"&&module.hasOwnProperty("exports")){module.exports=bigInt}if(typeof define==="function"&&define.amd){define("big-integer",[],function(){return bigInt})}
 \ No newline at end of file
 diff -ruN orig/src/electionguard/__init__.py build/src/electionguard/__init__.py
 --- orig/src/electionguard/__init__.py	1970-01-01 01:00:00.000000000 +0100
-+++ build/src/electionguard/__init__.py	2020-10-23 19:40:47.000000000 +0200
-@@ -0,0 +1 @@
-+import elgamal
++++ build/src/electionguard/__init__.py	2020-10-23 20:56:06.000000000 +0200
+@@ -0,0 +1,3 @@
++import election
++import election_builder
++from group import ElementModQ
+diff -ruN orig/src/electionguard/ballot.py build/src/electionguard/ballot.py
+--- orig/src/electionguard/ballot.py	2020-10-23 19:36:38.000000000 +0200
++++ build/src/electionguard/ballot.py	2020-10-23 20:49:23.000000000 +0200
+@@ -2,7 +2,6 @@
+ from datetime import datetime
+ from distutils import util
+ from enum import Enum
+-from typing import Any, List, Optional, Protocol, runtime_checkable, Sequence
+ 
+ from .chaum_pedersen import (
+     ConstantChaumPedersenProof,
+@@ -20,7 +19,7 @@
+ 
+ 
+ def _list_eq(
+-    list1 , list2 
++    list1 , list2
+ )  :
+     """
+     We want to compare lists of election objects as if they're sets. We fake this by first
+@@ -127,8 +126,7 @@
+         return not self.__eq__(other)
+ 
+ 
+-@runtime_checkable
+-class CiphertextSelection(Protocol):
++class CiphertextSelection:
+     """
+     Encrypted selection
+     """
+@@ -158,13 +156,13 @@
+     After construction, the `crypto_hash` field is populated automatically in the `__post_init__` cycle
+ 
+     A consumer of this object has the option to discard the `nonce` and/or discard the `proof`,
+-    or keep both values.  
+-    
++    or keep both values.
++
+     By discarding the `nonce`, the encrypted representation and `proof`
+     can only be regenerated if the nonce was derived from the ballot's master nonce.  If the nonce
+     used for this selection is truly random, and it is discarded, then the proofs cannot be regenerated.
+ 
+-    By keeping the `nonce`, or deriving the selection nonce from the ballot nonce, an external system can 
++    By keeping the `nonce`, or deriving the selection nonce from the ballot nonce, an external system can
+     regenerate the proofs on demand.  This is useful for storage or memory constrained systems.
+ 
+     By keeping the `proof` the nonce is not required fotor verify the encrypted selection.
+@@ -202,9 +200,9 @@
+         Given an encrypted BallotSelection, validates the encryption state against a specific seed hash and public key.
+         Calling this function expects that the object is in a well-formed encrypted state
+         with the elgamal encrypted `message` field populated along with the DisjunctiveChaumPedersenProof `proof` populated.
+-        the ElementModQ `description_hash` and the ElementModQ `crypto_hash` are also checked. 
++        the ElementModQ `description_hash` and the ElementModQ `crypto_hash` are also checked.
+ 
+-        :param seed_hash: the hash of the SelectionDescription, or 
++        :param seed_hash: the hash of the SelectionDescription, or
+                           whatever `ElementModQ` was used to populate the `description_hash` field.
+         :param elgamal_public_key: The election public key
+         """
+@@ -247,7 +245,7 @@
+ 
+ 
+ def _ciphertext_ballot_selection_crypto_hash_with(
+-    object_id , seed_hash , ciphertext 
++    object_id , seed_hash , ciphertext
+ )  :
+     return hash_elems(object_id, seed_hash, ciphertext.crypto_hash())
+ 
+@@ -310,10 +308,10 @@
+     this class can be either a partial or a complete representation of a contest dataset.  Specifically,
+     a partial representation must include at a minimum the "affirmative" selections of a contest.
+     A complete representation of a ballot must include both affirmative and negative selections of
+-    the contest, AND the placeholder selections necessary to satisfy the ConstantChaumPedersen proof 
++    the contest, AND the placeholder selections necessary to satisfy the ConstantChaumPedersen proof
+     in the CiphertextBallotContest.
+ 
+-    Typically partial contests are passed into Electionguard for memory constrained systems, 
++    Typically partial contests are passed into Electionguard for memory constrained systems,
+     while complete contests are passed into ElectionGuard when running encryption on an existing dataset.
+     """
+ 
+@@ -385,12 +383,12 @@
+ 
+     CiphertextBallotContest can only be a complete representation of a contest dataset.  While
+     PlaintextBallotContest supports a partial representation, a CiphertextBallotContest includes all data
+-    necessary for a verifier to verify the contest.  Specifically, it includes both explicit affirmative 
++    necessary for a verifier to verify the contest.  Specifically, it includes both explicit affirmative
+     and negative selections of the contest, as well as the placeholder selections that satisfy
+     the ConstantChaumPedersen proof.
+ 
+     Similar to `CiphertextBallotSelection` the consuming application can choose to discard or keep both
+-    the `nonce` and the `proof` in some circumstances.  For deterministic nonce's derived from the 
++    the `nonce` and the `proof` in some circumstances.  For deterministic nonce's derived from the
+     master nonce, both values can be regenerated.  If the `nonce` for this contest is completely random,
+     then it is required in order to regenerate the proof.
+     """
+@@ -468,8 +466,8 @@
+         by verifying the accumulated sum of selections match the proof.
+         Calling this function expects that the object is in a well-formed encrypted state
+         with the `ballot_selections` populated with valid encrypted ballot selections,
+-        the ElementModQ `description_hash`, the ElementModQ `crypto_hash`, and the ConstantChaumPedersenProof all populated. 
+-        Specifically, the seed hash in this context is the hash of the ContestDescription, 
++        the ElementModQ `description_hash`, the ElementModQ `crypto_hash`, and the ConstantChaumPedersenProof all populated.
++        Specifically, the seed hash in this context is the hash of the ContestDescription,
+         or whatever `ElementModQ` was used to populate the `description_hash` field.
+         """
+         if seed_hash != self.description_hash:
+@@ -521,7 +519,7 @@
+ 
+ 
+ def _ciphertext_ballot_contest_aggregate_nonce(
+-    object_id , ballot_selections 
++    object_id , ballot_selections
+ )  :
+     selection_nonces  = list()
+     for selection in ballot_selections:
+@@ -676,7 +674,7 @@
+ 
+     @staticmethod
+     def nonce_seed(
+-        description_hash , object_id , nonce 
++        description_hash , object_id , nonce
+     )  :
+         """
+         :return: a representation of the election and the external Id in the nonce's used
+@@ -737,7 +735,7 @@
+         Calling this function expects that the object is in a well-formed encrypted state
+         with the `contests` populated with valid encrypted ballot selections,
+         and the ElementModQ `description_hash` also populated.
+-        Specifically, the seed hash in this context is the hash of the Election Manifest, 
++        Specifically, the seed hash in this context is the hash of the Election Manifest,
+         or whatever `ElementModQ` was used to populate the `description_hash` field.
+         """
+ 
+@@ -813,7 +811,7 @@
+     def __eq__(self, other )  :
+         return (
+             isinstance(other, CiphertextAcceptedBallot)
+-            and super.__eq__(self, other)
++            and super().__eq__(self, other)
+             and self.state == other.state
+         )
+ 
+diff -ruN orig/src/electionguard/dataclasses.py build/src/electionguard/dataclasses.py
+--- orig/src/electionguard/dataclasses.py	1970-01-01 01:00:00.000000000 +0100
++++ build/src/electionguard/dataclasses.py	2020-10-23 20:49:58.000000000 +0200
+@@ -0,0 +1,11 @@
++def dataclass(func):
++  return func
++
++def field(func):
++  return func
++
++def InitVar(func):
++  return func
++
++def replace(func):
++  return func
+\ No newline at end of file
+diff -ruN orig/src/electionguard/distutils.py build/src/electionguard/distutils.py
+--- orig/src/electionguard/distutils.py	1970-01-01 01:00:00.000000000 +0100
++++ build/src/electionguard/distutils.py	2020-10-23 20:47:28.000000000 +0200
+@@ -0,0 +1,5 @@
++class Util:
++    def strtobool(str):
++        return int(str) == 1
++
++util = Util()
+\ No newline at end of file
 diff -ruN orig/src/electionguard/dlog.py build/src/electionguard/dlog.py
 --- orig/src/electionguard/dlog.py	2020-10-23 19:36:38.000000000 +0200
-+++ build/src/electionguard/dlog.py	2020-10-23 19:49:10.000000000 +0200
-@@ -1,6 +1,5 @@
++++ build/src/electionguard/dlog.py	2020-10-23 20:50:57.000000000 +0200
+@@ -1,8 +1,5 @@
  # support for computing discrete logs, with a cache so they're never recomputed
  
 -import asyncio
- from typing import Dict, Optional
- 
+-from typing import Dict, Optional
+-
  from .group import G, ElementModP, ONE_MOD_P, mult_p, int_to_p_unchecked
-@@ -30,24 +29,18 @@
+ 
+ __dlog_cache   = {ONE_MOD_P: 0}
+@@ -30,24 +27,18 @@
      if e in __dlog_cache:
          return __dlog_cache[e]
      else:
@@ -52,10 +225,201 @@ diff -ruN orig/src/electionguard/dlog.py build/src/electionguard/dlog.py
  
 -        return __dlog_cache[__dlog_max_elem]
 +    return __dlog_cache[__dlog_max_elem]
+diff -ruN orig/src/electionguard/election.py build/src/electionguard/election.py
+--- orig/src/electionguard/election.py	2020-10-23 19:36:39.000000000 +0200
++++ build/src/electionguard/election.py	2020-10-23 21:34:29.000000000 +0200
+@@ -1,7 +1,6 @@
+ from dataclasses import dataclass, field, InitVar
+ from datetime import datetime
+ from enum import Enum, unique
+-from typing import cast, List, Optional, Set, Any
+ 
+ from .ballot import _list_eq
+ from .election_object_base import ElectionObjectBase
+@@ -161,7 +160,7 @@
+ @dataclass(eq=True, unsafe_hash=True)
+ class GeopoliticalUnit(ElectionObjectBase, CryptoHashable):
+     """
+-    Use this entity for defining geopolitical units such as cities, districts, jurisdictions, or precincts, 
++    Use this entity for defining geopolitical units such as cities, districts, jurisdictions, or precincts,
+     for the purpose of associating contests, offices, vote counts, or other information with the geographies.
+     See: https://developers.google.com/elections-data/reference/gp-unit
+     """
+@@ -232,9 +231,9 @@
+ @dataclass(eq=True, unsafe_hash=True)
+ class Candidate(ElectionObjectBase, CryptoHashable):
+     """
+-    Entity describing information about a candidate in a contest. 
++    Entity describing information about a candidate in a contest.
+     See: https://developers.google.com/elections-data/reference/candidate
+-    Note: The ElectionGuard Data Spec deviates from the NIST model in that 
++    Note: The ElectionGuard Data Spec deviates from the NIST model in that
+     selections for any contest type are considered a "candidate".
+     for instance, on a yes-no referendum contest, two `candidate` objects
+     would be included in the model to represent the `affirmative` and `negative`
+@@ -264,13 +263,13 @@
+ @dataclass(eq=True, unsafe_hash=True)
+ class SelectionDescription(ElectionObjectBase, CryptoHashable):
+     """
+-    Data entity for the ballot selections in a contest, 
++    Data entity for the ballot selections in a contest,
+     for example linking candidates and parties to their vote counts.
+     See: https://developers.google.com/elections-data/reference/ballot-selection
+     Note: The ElectionGuard Data Spec deviates from the NIST model in that
+-    there is no difference for different types of selections. 
++    there is no difference for different types of selections.
+     The ElectionGuard Data Spec deviates from the NIST model in that
+-    `sequence_order` is a required field since it is used for ordering selections 
++    `sequence_order` is a required field since it is used for ordering selections
+     in a contest to ensure various encryption primitives are deterministic.
+     For a given election, the sequence of selections displayed to a user may be different
+     however that information is not captured by default when encrypting a specific ballot.
+@@ -281,7 +280,7 @@
+     """
+     Used for ordering selections in a contest to ensure various encryption primitives are deterministic.
+     The sequence order must be unique and should be representative of how the contests are represnted
+-    on a "master" ballot in an external system.  The sequence order is not required to be in the order 
++    on a "master" ballot in an external system.  The sequence order is not required to be in the order
+     in which they are displayed to a voter.  Any acceptable range of integer values may be provided.
+     """
+ 
+@@ -295,11 +294,11 @@
+ @dataclass(unsafe_hash=True)
+ class ContestDescription(ElectionObjectBase, CryptoHashable):
+     """
+-    Use this data entity for describing a contest and linking the contest 
++    Use this data entity for describing a contest and linking the contest
+     to the associated candidates and parties.
+     See: https://developers.google.com/elections-data/reference/contest
+     Note: The ElectionGuard Data Spec deviates from the NIST model in that
+-    `sequence_order` is a required field since it is used for ordering selections 
++    `sequence_order` is a required field since it is used for ordering selections
+     in a contest to ensure various encryption primitives are deterministic.
+     For a given election, the sequence of contests displayed to a user may be different
+     however that information is not captured by default when encrypting a specific ballot.
+@@ -310,7 +309,7 @@
+     """
+     Used for ordering contests in a ballot to ensure various encryption primitives are deterministic.
+     The sequence order must be unique and should be representative of how the contests are represnted
+-    on a "master" ballot in an external system.  The sequence order is not required to be in the order 
++    on a "master" ballot in an external system.  The sequence order is not required to be in the order
+     in which they are displayed to a voter.  Any acceptable range of integer values may be provided.
+     """
+ 
+@@ -444,7 +443,7 @@
+     Use this entity to describe a contest that involves selecting one or more candidates.
+     See: https://developers.google.com/elections-data/reference/contest
+     Note: The ElectionGuard Data Spec deviates from the NIST model in that
+-    this subclass is used purely for convenience 
++    this subclass is used purely for convenience
+     """
+ 
+     primary_party_ids  = field(default_factory=lambda: [])
+@@ -519,7 +518,7 @@
+ @dataclass(unsafe_hash=True)
+ class ElectionDescription(Serializable, CryptoHashable):
+     """
+-    Use this entity for defining the structure of the election and associated 
++    Use this entity for defining the structure of the election and associated
+     information such as candidates, contests, and vote counts.  This class is
+     based on the NIST Election Common Standard Data Specification.  Some deviations
+     from the standard exist.
+@@ -748,7 +747,7 @@
+         )
+ 
+     def contest_for(
+-        self, contest_id 
++        self, contest_id
+     )  :
+         """
+         Get contest by id
+@@ -774,7 +773,7 @@
+         return style
+ 
+     def get_contests_for(
+-        self, ballot_style_id 
++        self, ballot_style_id
+     )  :
+         """
+         Get contests for a ballot style
+@@ -791,10 +790,10 @@
+         return contests
+ 
+     def _generate_contests_with_placeholders(
+-        self, description 
++        self, description
+     )  :
+         """
+-        For each contest, append the `number_elected` number 
++        For each contest, append the `number_elected` number
+         of placeholder selections to the end of the contest collection
+         """
+         contests  = list()
+@@ -814,7 +813,7 @@
+ @dataclass(eq=True, unsafe_hash=True)
+ class ElectionConstants(Serializable):
+     """
+-    The constants for mathematical functions during the election. 
++    The constants for mathematical functions during the election.
+     """
+ 
+     large_prime = P
+@@ -912,7 +911,7 @@
+ 
+ 
+ def contest_description_with_placeholders_from(
+-    description , placeholders 
++    description , placeholders
+ )  :
+     """
+     Generates a placeholder selection description
+@@ -963,7 +962,7 @@
+ 
+ 
+ def generate_placeholder_selections_from(
+-    contest , count 
++    contest , count
+ )  :
+     """
+     Generates the specified number of placeholder selections in ascending sequence order from the max selection sequence orderf
+diff -ruN orig/src/electionguard/election_builder.py build/src/electionguard/election_builder.py
+--- orig/src/electionguard/election_builder.py	2020-10-23 19:36:39.000000000 +0200
++++ build/src/electionguard/election_builder.py	2020-10-23 20:50:51.000000000 +0200
+@@ -1,7 +1,4 @@
+-from __future__ import annotations
+-
+ from dataclasses import dataclass, field
+-from typing import Optional, Tuple
+ 
+ from .election import (
+     CiphertextElectionContext,
 diff -ruN orig/src/electionguard/elgamal.py build/src/electionguard/elgamal.py
 --- orig/src/electionguard/elgamal.py	2020-10-23 19:36:40.000000000 +0200
-+++ build/src/electionguard/elgamal.py	2020-10-23 19:35:31.000000000 +0200
-@@ -117,7 +117,7 @@
++++ build/src/electionguard/elgamal.py	2020-10-23 20:52:05.000000000 +0200
+@@ -1,5 +1,3 @@
+-from typing import Iterable, NamedTuple, Optional
+-
+ from .dlog import discrete_log
+ from .group import (
+     ElementModQ,
+@@ -18,14 +16,14 @@
+ from .utils import flatmap_optional, get_optional
+ 
+ 
+-class ElGamalKeyPair(NamedTuple):
++class ElGamalKeyPair:
+     """A tuple of an ElGamal secret key and public key."""
+ 
+     #secret_key: ElementModQ
+     #public_key: ElementModP
+ 
+ 
+-class ElGamalCiphertext(NamedTuple):
++class ElGamalCiphertext:
+     """
+     An "exponential ElGamal ciphertext" (i.e., with the plaintext in the exponent to allow for
+     homomorphic addition). Create one with `elgamal_encrypt`. Add them with `elgamal_add`.
+@@ -117,7 +115,7 @@
  
  
  def elgamal_encrypt(
@@ -64,10 +428,28 @@ diff -ruN orig/src/electionguard/elgamal.py build/src/electionguard/elgamal.py
  )  :
      """
      Encrypts a message with a given random nonce and an ElGamal public key.
+diff -ruN orig/src/electionguard/encrypt.py build/src/electionguard/encrypt.py
+--- orig/src/electionguard/encrypt.py	2020-10-23 19:36:40.000000000 +0200
++++ build/src/electionguard/encrypt.py	2020-10-23 20:52:00.000000000 +0200
+@@ -1,4 +1,3 @@
+-from typing import List, Optional
+ from uuid import getnode
+ 
+ from .ballot import (
+diff -ruN orig/src/electionguard/enum.py build/src/electionguard/enum.py
+--- orig/src/electionguard/enum.py	1970-01-01 01:00:00.000000000 +0100
++++ build/src/electionguard/enum.py	2020-10-23 20:50:22.000000000 +0200
+@@ -0,0 +1,5 @@
++class Enum:
++    pass
++
++def unique(func):
++    return func
+\ No newline at end of file
 diff -ruN orig/src/electionguard/group.py build/src/electionguard/group.py
 --- orig/src/electionguard/group.py	2020-10-23 19:36:40.000000000 +0200
-+++ build/src/electionguard/group.py	2020-10-23 19:29:40.000000000 +0200
-@@ -2,21 +2,17 @@
++++ build/src/electionguard/group.py	2020-10-23 21:39:11.000000000 +0200
+@@ -2,44 +2,37 @@
  # in the sense that performance may be less than hand-optimized C code, and no guarantees are
  # made about timing or other side-channels.
  
@@ -75,37 +457,42 @@ diff -ruN orig/src/electionguard/group.py build/src/electionguard/group.py
 -from base64 import b16decode
 -from secrets import randbelow
 -from gmpy2 import mpz, powmod, invert, to_binary, from_binary
-+from BigInteger import bigInt as mpz
++from BigInteger import bigInt
  
- # Constants used by ElectionGuard
+-# Constants used by ElectionGuard
 -Q  = pow(2, 256) - 189
 -P      = 1044388881413152506691752710716624382579964249047383780384233483283953907971553643537729993126875883902173634017777416360502926082946377942955704498542097614841825246773580689398386320439747911160897731551074903967243883427132918813748016269754522343505285898816777211761912392772914485521155521641049273446207578961939840619466145806859275053476560973295158703823395710210329314709715239251736552384080845836048778667318931418338422443891025911884723433084701207771901944593286624979917391350564662632723703007964229849154756196890615252286533089643184902706926081744149289517418249153634178342075381874131646013444796894582106870531535803666254579602632453103741452569793905551901541856173251385047414840392753585581909950158046256810542678368121278509960520957624737942914600310646609792665012858397381435755902851312071248102599442308951327039250818892493767423329663783709190716162023529669217300939783171415808233146823000766917789286154006042281423733706462905243774854543127239500245873582012663666430583862778167369547603016344242729592244544608279405999759391099775667746401633668308698186721172238255007962658564443858927634850415775348839052026675785694826386930175303143450046575460843879941791946313299322976993405829119
-+Q = mpz(2).pow(256) - 189
-+P = mpz("1044388881413152506691752710716624382579964249047383780384233483283953907971553643537729993126875883902173634017777416360502926082946377942955704498542097614841825246773580689398386320439747911160897731551074903967243883427132918813748016269754522343505285898816777211761912392772914485521155521641049273446207578961939840619466145806859275053476560973295158703823395710210329314709715239251736552384080845836048778667318931418338422443891025911884723433084701207771901944593286624979917391350564662632723703007964229849154756196890615252286533089643184902706926081744149289517418249153634178342075381874131646013444796894582106870531535803666254579602632453103741452569793905551901541856173251385047414840392753585581909950158046256810542678368121278509960520957624737942914600310646609792665012858397381435755902851312071248102599442308951327039250818892493767423329663783709190716162023529669217300939783171415808233146823000766917789286154006042281423733706462905243774854543127239500245873582012663666430583862778167369547603016344242729592244544608279405999759391099775667746401633668308698186721172238255007962658564443858927634850415775348839052026675785694826386930175303143450046575460843879941791946313299322976993405829119")
++mpz = bigInt
  
++# Constants used by ElectionGuard
++Q = mpz(2).pow(256).minus(189)
++P = mpz("1044388881413152506691752710716624382579964249047383780384233483283953907971553643537729993126875883902173634017777416360502926082946377942955704498542097614841825246773580689398386320439747911160897731551074903967243883427132918813748016269754522343505285898816777211761912392772914485521155521641049273446207578961939840619466145806859275053476560973295158703823395710210329314709715239251736552384080845836048778667318931418338422443891025911884723433084701207771901944593286624979917391350564662632723703007964229849154756196890615252286533089643184902706926081744149289517418249153634178342075381874131646013444796894582106870531535803666254579602632453103741452569793905551901541856173251385047414840392753585581909950158046256810542678368121278509960520957624737942914600310646609792665012858397381435755902851312071248102599442308951327039250818892493767423329663783709190716162023529669217300939783171415808233146823000766917789286154006042281423733706462905243774854543127239500245873582012663666430583862778167369547603016344242729592244544608279405999759391099775667746401633668308698186721172238255007962658564443858927634850415775348839052026675785694826386930175303143450046575460843879941791946313299322976993405829119")
  
 -R  = ((P - 1) * pow(Q, -1, P)) % P
 -G      = 14245109091294741386751154342323521003543059865261911603340669522218159898070093327838595045175067897363301047764229640327930333001123401070596314469603183633790452807428416775717923182949583875381833912370889874572112086966300498607364501764494811956017881198827400327403252039184448888877644781610594801053753235453382508543906993571248387749420874609737451803650021788641249940534081464232937193671929586747339353451021712752406225276255010281004857233043241332527821911604413582442915993833774890228705495787357234006932755876972632840760599399514028393542345035433135159511099877773857622699742816228063106927776147867040336649025152771036361273329385354927395836330206311072577683892664475070720408447257635606891920123791602538518516524873664205034698194561673019535564273204744076336022130453963648114321050173994259620611015189498335966173440411967562175734606706258335095991140827763942280037063180207172918769921712003400007923888084296685269233298371143630883011213745082207405479978418089917768242592557172834921185990876960527013386693909961093302289646193295725135238595082039133488721800071459503353417574248679728577942863659802016004283193163470835709405666994892499382890912238098413819320185166580019604608311466
-+R = ((P - 1) * Q.modPow(-1, P)).mod(P)
+ 
++R = P.minus(1).multiply(Q.modInv(P)).mod(P)
 +G = mpz("14245109091294741386751154342323521003543059865261911603340669522218159898070093327838595045175067897363301047764229640327930333001123401070596314469603183633790452807428416775717923182949583875381833912370889874572112086966300498607364501764494811956017881198827400327403252039184448888877644781610594801053753235453382508543906993571248387749420874609737451803650021788641249940534081464232937193671929586747339353451021712752406225276255010281004857233043241332527821911604413582442915993833774890228705495787357234006932755876972632840760599399514028393542345035433135159511099877773857622699742816228063106927776147867040336649025152771036361273329385354927395836330206311072577683892664475070720408447257635606891920123791602538518516524873664205034698194561673019535564273204744076336022130453963648114321050173994259620611015189498335966173440411967562175734606706258335095991140827763942280037063180207172918769921712003400007923888084296685269233298371143630883011213745082207405479978418089917768242592557172834921185990876960527013386693909961093302289646193295725135238595082039133488721800071459503353417574248679728577942863659802016004283193163470835709405666994892499382890912238098413819320185166580019604608311466")
  
--
 -Q_MINUS_ONE  = Q - 1
 +Q_MINUS_ONE = Q - 1
  
  
- class ElementModQ(NamedTuple):
-@@ -24,22 +20,15 @@
+-class ElementModQ(NamedTuple):
++class ElementModQ:
+     """An element of the smaller `mod q` space, i.e., in [0, Q), where Q is a 256-bit prime."""
  
      #elem: mpz
- 
+-
 -    def to_bytes(self)  :
 -        """
 -        Converts from the element to the representation of bytes by first going through hex. 
 -        This is preferable to directly accessing `elem`, whose representation might change.
 -        """
 -        return b16decode(self.to_hex())
--
++    def __init__(self, elem):
++        self.elem = elem
+ 
      def to_hex(self)  :
          """
          Converts from the element to the hex representation of bytes. This is preferable to directly
@@ -120,7 +507,27 @@ diff -ruN orig/src/electionguard/group.py build/src/electionguard/group.py
  
      def to_int(self)  :
          """
-@@ -88,7 +77,7 @@
+@@ -75,20 +68,25 @@
+         ) and eq_elems(self, other)
+ 
+     def __str__(self)  :
+-        return self.elem.digits()
++        return self.elem.toString()
++
++    def toString(self)  :
++        return str(self)
+ 
+ 
+-class ElementModP(NamedTuple):
++class ElementModP:
+     """An element of the larger `mod p` space, i.e., in [0, P), where P is a 4096-bit prime."""
+ 
+     #elem: mpz
++    def __init__(self, elem):
++        self.elem = elem
+ 
+     def to_hex(self)  :
+         """
          Converts from the element to the hex representation of bytes. This is preferable to directly
          accessing `elem`, whose representation might change.
          """
@@ -129,7 +536,31 @@ diff -ruN orig/src/electionguard/group.py build/src/electionguard/group.py
          if len(h) % 2:
              h = "0" + h
          return h
-@@ -214,21 +203,6 @@
+@@ -135,7 +133,10 @@
+         ) and eq_elems(self, other)
+ 
+     def __str__(self)  :
+-        return self.elem.digits()
++        return self.elem.toString()
++
++    def toString(self)  :
++        return str(self)
+ 
+ 
+ # Common constants
+@@ -147,11 +148,6 @@
+ ONE_MOD_P  = ElementModP(mpz(1))
+ TWO_MOD_P  = ElementModP(mpz(2))
+ 
+-ElementModPOrQ = Union[ElementModP, ElementModQ]
+-ElementModPOrQorInt = Union[ElementModP, ElementModQ, int]
+-ElementModQorInt = Union[ElementModQ, int]
+-ElementModPorInt = Union[ElementModP, int]
+-
+ 
+ def hex_to_q(input )  :
+     """
+@@ -214,21 +210,6 @@
      m = mpz(int(i))
      return ElementModP(m)
  
@@ -151,7 +582,48 @@ diff -ruN orig/src/electionguard/group.py build/src/electionguard/group.py
  def add_q(*elems )  :
      """
      Adds together one or more elements in Q, returns the sum mod Q.
-@@ -290,7 +264,7 @@
+@@ -237,7 +218,7 @@
+     for e in elems:
+         if isinstance(e, int):
+             e = int_to_q_unchecked(e)
+-        t = (t + e.elem) % Q
++        t = t.sum(e.elem).mod(Q)
+ 
+     return ElementModQ(t)
+ 
+@@ -251,7 +232,7 @@
+     if isinstance(b, int):
+         b = int_to_q_unchecked(b)
+ 
+-    return ElementModQ((a.elem - b.elem) % Q)
++    return ElementModQ(a.elem.minus(b.elem).mod(Q))
+ 
+ 
+ def div_p(a , b )  :
+@@ -263,7 +244,7 @@
+     if isinstance(b, int):
+         b = int_to_p_unchecked(b)
+ 
+-    inverse = invert(b.elem, mpz(P))
++    inverse = b.elem.modInv(P)
+     return mult_p(a, int_to_p_unchecked(inverse))
+ 
+ 
+@@ -276,7 +257,7 @@
+     if isinstance(b, int):
+         b = int_to_p_unchecked(b)
+ 
+-    inverse = invert(b.elem, mpz(Q))
++    inverse = b.elem.modInv(Q)
+     return mult_q(a, int_to_q_unchecked(inverse))
+ 
+ 
+@@ -286,11 +267,11 @@
+     """
+     if isinstance(a, int):
+         a = int_to_q_unchecked(a)
+-    return ElementModQ(Q - a.elem)
++    return ElementModQ(Q.minus(a.elem))
  
  
  def a_plus_bc_q(
@@ -160,7 +632,61 @@ diff -ruN orig/src/electionguard/group.py build/src/electionguard/group.py
  )  :
      """
      Computes (a + b * c) mod q.
-@@ -393,7 +367,8 @@
+@@ -302,7 +283,7 @@
+     if isinstance(c, int):
+         c = int_to_q_unchecked(c)
+ 
+-    return ElementModQ((a.elem + b.elem * c.elem) % Q)
++    return ElementModQ(a.elem.sum(b.elem.multiply(c.elem)).mod(Q))
+ 
+ 
+ def mult_inv_p(e )  :
+@@ -315,7 +296,7 @@
+         e = int_to_p_unchecked(e)
+ 
+     assert e.elem != 0, "No multiplicative inverse for zero"
+-    return ElementModP(powmod(e.elem, -1, P))
++    return ElementModP(e.elem.modInv(P))
+ 
+ 
+ def pow_p(b , e )  :
+@@ -331,7 +312,7 @@
+     if isinstance(e, int):
+         e = int_to_p_unchecked(e)
+ 
+-    return ElementModP(powmod(b.elem, e.elem, P))
++    return ElementModP(b.elem.modPow(e.elem, P))
+ 
+ 
+ def pow_q(b , e )  :
+@@ -347,7 +328,7 @@
+     if isinstance(e, int):
+         e = int_to_q_unchecked(e)
+ 
+-    return ElementModQ(powmod(b.elem, e.elem, Q))
++    return ElementModQ(b.elem.modPow(e.elem, Q))
+ 
+ 
+ def mult_p(*elems )  :
+@@ -360,7 +341,7 @@
+     for x in elems:
+         if isinstance(x, int):
+             x = int_to_p_unchecked(x)
+-        product = (product * x.elem) % P
++        product = product.multiply(x.elem).mod(P)
+     return ElementModP(product)
+ 
+ 
+@@ -374,7 +355,7 @@
+     for x in elems:
+         if isinstance(x, int):
+             x = int_to_p_unchecked(x)
+-        product = (product * x.elem) % Q
++        product = product.multiply(x.elem).mod(Q)
+     return ElementModQ(product)
+ 
+ 
+@@ -393,7 +374,8 @@
  
      :return: Random value between 0 and Q
      """
@@ -170,7 +696,7 @@ diff -ruN orig/src/electionguard/group.py build/src/electionguard/group.py
  
  
  def rand_range_q(start )  :
-@@ -408,7 +383,8 @@
+@@ -408,7 +390,8 @@
  
      random = 0
      while random < start:
@@ -182,14 +708,68 @@ diff -ruN orig/src/electionguard/group.py build/src/electionguard/group.py
  
 diff -ruN orig/src/electionguard/hash.py build/src/electionguard/hash.py
 --- orig/src/electionguard/hash.py	2020-10-23 19:36:40.000000000 +0200
-+++ build/src/electionguard/hash.py	2020-10-23 19:47:24.000000000 +0200
-@@ -1,5 +1,3 @@
++++ build/src/electionguard/hash.py	2020-10-23 20:49:05.000000000 +0200
+@@ -1,11 +1,3 @@
 -from abc import abstractmethod
 -from hashlib import sha256
- from typing import (
-     Union,
-     Protocol,
-@@ -65,34 +63,6 @@
+-from typing import (
+-    Union,
+-    Protocol,
+-    runtime_checkable,
+-    Sequence,
+-)
+ 
+ from .group import (
+     ElementModPOrQ,
+@@ -16,13 +8,11 @@
+ )
+ 
+ 
+-@runtime_checkable
+-class CryptoHashable(Protocol):
++class CryptoHashable:
+     """
+     Denotes hashable
+     """
+ 
+-    @abstractmethod
+     def crypto_hash(self)  :
+         """
+         Generates a hash given the fields on the implementing instance.
+@@ -30,13 +20,11 @@
+         ...
+ 
+ 
+-@runtime_checkable
+-class CryptoHashCheckable(Protocol):
++class CryptoHashCheckable:
+     """
+     Checkable version of crypto hash
+     """
+ 
+-    @abstractmethod
+     def crypto_hash_with(self, seed_hash )  :
+         """
+         Generates a hash with a given seed that can be checked later against the seed and class metadata.
+@@ -44,17 +32,6 @@
+         ...
+ 
+ 
+-# All the "atomic" types that we know how to hash.
+-CRYPTO_HASHABLE_T = Union[CryptoHashable, ElementModPOrQ, str, int, None]
+-
+-# "Compound" types that we know how to hash. Note that we're using Sequence, rather than List,
+-# because Sequences are read-only, and thus safely covariant. All this really means is that
+-# we promise never to mutate any list that you pass to hash_elems.
+-CRYPTO_HASHABLE_ALL = Union[
+-    Sequence[CRYPTO_HASHABLE_T], CRYPTO_HASHABLE_T,
+-]
+-
+-
+ def hash_elems(*a )  :
+     """
+     Given zero or more elements, calculate their cryptographic hash
+@@ -65,34 +42,6 @@
      :param a: Zero or more elements of any of the accepted types.
      :return: A cryptographic hash of these elements, concatenated.
      """
@@ -229,13 +809,38 @@ diff -ruN orig/src/electionguard/hash.py build/src/electionguard/hash.py
 +
 diff -ruN orig/src/electionguard/logger.js build/src/electionguard/logger.js
 --- orig/src/electionguard/logger.js	1970-01-01 01:00:00.000000000 +0100
-+++ build/src/electionguard/logger.js	2020-10-23 19:44:50.000000000 +0200
-@@ -0,0 +1 @@
-+!function(e){"use strict";var t,c={};c.VERSION="1.6.0";var o={},n=function(e,n){return function(){return n.apply(e,arguments)}},r=function(){var e,n,t=arguments,o=t[0];for(n=1;n<t.length;n++)for(e in t[n])e in o||!t[n].hasOwnProperty(e)||(o[e]=t[n][e]);return o},i=function(e,n){return{value:e,name:n}};c.TRACE=i(1,"TRACE"),c.DEBUG=i(2,"DEBUG"),c.INFO=i(3,"INFO"),c.TIME=i(4,"TIME"),c.WARN=i(5,"WARN"),c.ERROR=i(8,"ERROR"),c.OFF=i(99,"OFF");var l=function(e){this.context=e,this.setLevel(e.filterLevel),this.log=this.info};l.prototype={setLevel:function(e){e&&"value"in e&&(this.context.filterLevel=e)},getLevel:function(){return this.context.filterLevel},enabledFor:function(e){var n=this.context.filterLevel;return e.value>=n.value},trace:function(){this.invoke(c.TRACE,arguments)},debug:function(){this.invoke(c.DEBUG,arguments)},info:function(){this.invoke(c.INFO,arguments)},warn:function(){this.invoke(c.WARN,arguments)},error:function(){this.invoke(c.ERROR,arguments)},time:function(e){"string"==typeof e&&0<e.length&&this.invoke(c.TIME,[e,"start"])},timeEnd:function(e){"string"==typeof e&&0<e.length&&this.invoke(c.TIME,[e,"end"])},invoke:function(e,n){t&&this.enabledFor(e)&&t(n,r({level:e},this.context))}};var f,u=new l({filterLevel:c.OFF});(f=c).enabledFor=n(u,u.enabledFor),f.trace=n(u,u.trace),f.debug=n(u,u.debug),f.time=n(u,u.time),f.timeEnd=n(u,u.timeEnd),f.info=n(u,u.info),f.warn=n(u,u.warn),f.error=n(u,u.error),f.log=f.info,c.setHandler=function(e){t=e},c.setLevel=function(e){for(var n in u.setLevel(e),o)o.hasOwnProperty(n)&&o[n].setLevel(e)},c.getLevel=function(){return u.getLevel()},c.get=function(e){return o[e]||(o[e]=new l(r({name:e},u.context)))},c.createDefaultHandler=function(r){(r=r||{}).formatter=r.formatter||function(e,n){n.name&&e.unshift("["+n.name+"]")};var i={},l=function(e,n){Function.prototype.apply.call(e,console,n)};return"undefined"==typeof console?function(){}:function(e,n){e=Array.prototype.slice.call(e);var t,o=console.log;n.level===c.TIME?(t=(n.name?"["+n.name+"] ":"")+e[0],"start"===e[1]?console.time?console.time(t):i[t]=(new Date).getTime():console.timeEnd?console.timeEnd(t):l(o,[t+": "+((new Date).getTime()-i[t])+"ms"])):(n.level===c.WARN&&console.warn?o=console.warn:n.level===c.ERROR&&console.error?o=console.error:n.level===c.INFO&&console.info?o=console.info:n.level===c.DEBUG&&console.debug?o=console.debug:n.level===c.TRACE&&console.trace&&(o=console.trace),r.formatter(e,n),l(o,e))}},c.useDefaults=function(e){c.setLevel(e&&e.defaultLevel||c.DEBUG),c.setHandler(c.createDefaultHandler(e))},"function"==typeof define&&define.amd?define(c):"undefined"!=typeof module&&module.exports?module.exports=c:(c._prevLogger=e.Logger,c.noConflict=function(){return e.Logger=c._prevLogger,c},e.Logger=c)}(this);
++++ build/src/electionguard/logger.js	2020-10-23 21:27:18.000000000 +0200
+@@ -0,0 +1,26 @@
++class ConsoleLogger {
++  constructor() {
++  }
++
++  debug(message) {
++    console.log("debug: " + message)
++  }
++
++  warning(message) {
++    console.log("warning: " + message)
++  }
++
++  info(message) {
++    console.log("info: " + message)
++  }
++
++  error(message) {
++    console.log("error: " + message)
++  }
++
++  critical(message) {
++    console.log("critical: " + message)
++  }
++}
++
++export var Logger = function() { return new ConsoleLogger(); }
 \ No newline at end of file
 diff -ruN orig/src/electionguard/logs.py build/src/electionguard/logs.py
 --- orig/src/electionguard/logs.py	2020-10-23 19:36:41.000000000 +0200
-+++ build/src/electionguard/logs.py	2020-10-23 19:45:39.000000000 +0200
++++ build/src/electionguard/logs.py	2020-10-23 21:27:06.000000000 +0200
 @@ -1,9 +1,4 @@
 -import inspect
 -import logging
@@ -308,16 +913,332 @@ diff -ruN orig/src/electionguard/logs.py build/src/electionguard/logs.py
      def debug(self, message , *args , **kwargs )  :
          """
          Logs a debug message
+diff -ruN orig/src/electionguard/nonces.py build/src/electionguard/nonces.py
+--- orig/src/electionguard/nonces.py	2020-10-23 19:36:41.000000000 +0200
++++ build/src/electionguard/nonces.py	2020-10-23 20:51:32.000000000 +0200
+@@ -1,10 +1,8 @@
+-from typing import Union, Sequence, List, overload
++from .group import ElementModQ, ElementModPOrQ
++from .hash import hash_elems
+ 
+-from electionguard.group import ElementModQ, ElementModPOrQ
+-from electionguard.hash import hash_elems
+ 
+-
+-class Nonces(Sequence[ElementModQ]):
++class Nonces:
+     """
+     Creates a sequence of random elements in [0,Q), seeded from an initial element in [0,Q).
+     If you start with the same seed, you'll get exactly the same sequence. Optional string
+@@ -23,16 +21,14 @@
+             self.__seed = seed
+ 
+     # https://github.com/python/mypy/issues/4108
+-    @overload
+     def __getitem__(self, index )  :
+         pass
+ 
+-    @overload
+     def __getitem__(self, index )  :
+         pass
+ 
+     def __getitem__(
+-        self, index  
++        self, index
+     )   :
+         if isinstance(index, int):
+             return self.get_with_headers(index)
+diff -ruN orig/src/electionguard/serializable.py build/src/electionguard/serializable.py
+--- orig/src/electionguard/serializable.py	2020-10-23 19:36:41.000000000 +0200
++++ build/src/electionguard/serializable.py	2020-10-23 20:51:27.000000000 +0200
+@@ -1,25 +1,7 @@
+ from dataclasses import dataclass
+ from datetime import datetime
+ import re
+-from os import path
+-from typing import Any, cast, Type, TypeVar
+ 
+-from jsons import (
+-    dump,
+-    dumps,
+-    NoneType,
+-    load,
+-    loads,
+-    JsonsError,
+-    set_deserializer,
+-    set_serializer,
+-    set_validator,
+-    suppress_warnings,
+-    default_nonetype_deserializer,
+-)
+-
+-S = TypeVar("S", bound="Serializable")
+-T = TypeVar("T")
+ 
+ JSON_FILE_EXTENSION  = ".json"
+ WRITE  = "w"
+@@ -41,7 +23,8 @@
+         :param strip_privates: strip private variables
+         :return: the json string representation of this object
+         """
+-        return write_json(self, strip_privates)
++        # TO-DO: implement strip_privates
++        return JSON.stringify(self)
+ 
+     def to_json_object(self, strip_privates  = True)  :
+         """
+@@ -49,18 +32,8 @@
+         :param strip_privates: strip private variables
+         :return: the json representation of this object
+         """
+-        return write_json_object(self, strip_privates)
+-
+-    def to_json_file(
+-        self, file_name , file_path  = "", strip_privates  = True
+-    )  :
+-        """
+-        Serialize an object to a json file
+-        :param file_name: File name
+-        :param file_path: File path
+-        :param strip_privates: Strip private variables
+-        """
+-        write_json_file(self, file_name, file_path, strip_privates)
++        # TO-DO: implement strip_privates
++        return self
+ 
+     @classmethod
+     def from_json(cls , data )  :
+@@ -68,7 +41,7 @@
+         Deserialize the provided data string into the specified instance
+         :param data: JSON string
+         """
+-        return read_json(data, cls)
++        return JSON.parse(data)
+ 
+     @classmethod
+     def from_json_object(cls , data )  :
+@@ -76,175 +49,6 @@
+         Deserialize the provided data object into the specified instance
+         :param data: JSON object
+         """
+-        return read_json_object(data, cls)
+-
+-    @classmethod
+-    def from_json_file(cls , file_name , file_path  = "")  :
+-        """
+-        Deserialize the provided file into the specified instance
+-        :param file_name: File name
+-        :param file_path: File path
+-        """
+-        return read_json_file(cls, file_name, file_path)
+-
+-
+-def _remove_key(obj , key_to_remove )  :
+-    """
+-    Remove key from object recursively
+-    :param obj: Any object
+-    :param key_to_remove: key to remove
+-    """
+-    if isinstance(obj, dict):
+-        for key in list(obj.keys()):
+-            if key == key_to_remove:
+-                del obj[key]
+-            else:
+-                _remove_key(obj[key], key_to_remove)
+-    elif isinstance(obj, list):
+-        for i in reversed(range(len(obj))):
+-            if obj[i] == key_to_remove:
+-                del obj[i]
+-            else:
+-                _remove_key(obj[i], key_to_remove)
+-
++        return data
+ 
+-def write_json(object_to_write , strip_privates  = True)  :
+-    """
+-    Serialize to json string
+-    :param object_to_write: object to write to json
+-    :param strip_privates: strip private variables
+-    :return: the json string representation of this object
+-    """
+-    set_serializers()
+-    suppress_warnings()
+-    try:
+-        json_object = write_json_object(object_to_write, strip_privates)
+-        json_string = cast(
+-            str, dumps(json_object, strip_privates=strip_privates, strip_nulls=True)
+-        )
+-        return json_string
+-    except JsonsError:
+-        return JSON_PARSE_ERROR
+-
+-
+-def write_json_object(object_to_write , strip_privates  = True)  :
+-    """
+-    Serialize to json object
+-    :param object_to_write: object to write to json
+-    :param strip_privates: strip private variables
+-    :return: the json representation of this object
+-    """
+-    set_serializers()
+-    suppress_warnings()
+-    try:
+-        json_object = dump(
+-            object_to_write, strip_privates=strip_privates, strip_nulls=True
+-        )
+-        for key in KEYS_TO_REMOVE:
+-            _remove_key(json_object, key)
+-        return json_object
+-    except JsonsError:
+-        return JSON_PARSE_ERROR
+-
+-
+-def write_json_file(
+-    object_to_write ,
+-    file_name ,
+-    file_path  = "",
+-    strip_privates  = True,
+-)  :
+-    """
+-    Serialize json data string to json file
+-    :param object_to_write: object to write to json
+-    :param file_name: File name
+-    :param file_path: File path
+-    :param strip_privates: strip private variables
+-    """
+-    json_file_path  = path.join(file_path, file_name + JSON_FILE_EXTENSION)
+-    with open(json_file_path, WRITE) as json_file:
+-        json_file.write(write_json(object_to_write, strip_privates))
+-
+-
+-def read_json(data , class_out )  :
+-    """
+-    Deserialize json file to object
+-    :param data: Json file data
+-    :param class_out: Object type
+-    :return: Deserialized object
+-    """
+-    set_deserializers()
+-    return cast(T, loads(data, class_out))
+-
+-
+-def read_json_object(data , class_out )  :
+-    """
+-    Deserialize json file to object
+-    :param data: Json file data
+-    :param class_out: Object type
+-    :return: Deserialized object
+-    """
+-    set_deserializers()
+-    return cast(T, load(data, class_out))
+-
+-
+-def read_json_file(class_out , file_name , file_path  = "")  :
+-    """
+-    Deserialize json file to object
+-    :param class_out: Object type
+-    :param file_name: File name
+-    :param file_path: File path
+-    :return: Deserialized object
+-    """
+-    set_deserializers()
+-    json_file_path  = path.join(file_path, file_name + JSON_FILE_EXTENSION)
+-    with open(json_file_path, READ) as json_file:
+-        data = json_file.read()
+-        target  = read_json(data, class_out)
+-    return target
+-
+-
+-def set_serializers()  :
+-    """Set serializers for jsons to use to cast specific classes"""
+-
+-    # Local import to minimize jsons usage across files
+-    from .group import ElementModP, ElementModQ
+-
+-    set_serializer(lambda p, **_: str(p), ElementModP)
+-    set_serializer(lambda q, **_: str(q), ElementModQ)
+-    set_serializer(lambda dt, **_: dt.isoformat(), datetime)
+-
+-
+-def set_deserializers()  :
+-    """Set deserializers and validators for json to use to cast specific classes"""
+-
+-    # Local import to minimize jsons usage across files
+-    from .group import ElementModP, ElementModQ, int_to_p_unchecked, int_to_q_unchecked
+-
+-    set_deserializer(
+-        lambda p_as_int, cls, **_: int_to_p_unchecked(p_as_int), ElementModP
+-    )
+-    set_validator(lambda p: p.is_in_bounds(), ElementModP)
+-
+-    set_deserializer(
+-        lambda q_as_int, cls, **_: int_to_q_unchecked(q_as_int), ElementModQ
+-    )
+-    set_validator(lambda q: q.is_in_bounds(), ElementModQ)
+-
+-    set_deserializer(
+-        lambda none, cls, **_: None
+-        if none == "None"
+-        else default_nonetype_deserializer(none),
+-        NoneType,
+-    )
+-
+-    set_deserializer(lambda dt, cls, **_: _deserialize_datetime(dt), datetime)
+-
+-
+-def _deserialize_datetime(value )  :
+-    """
+-    The `fromisoformat` function doesn't recognize the Z (Zulu) suffix
+-    to indicate UTC.  For compatibility with more external clients, we
+-    should allow it.
+-    """
+-    tz_corrected = re.sub("Z$", "+00:00", value)
+-    return datetime.fromisoformat(tz_corrected)
++#TO-DO: bigInt serialization?
+diff -ruN orig/src/electionguard/singleton.py build/src/electionguard/singleton.py
+--- orig/src/electionguard/singleton.py	2020-10-23 19:36:42.000000000 +0200
++++ build/src/electionguard/singleton.py	2020-10-23 20:51:21.000000000 +0200
+@@ -1,4 +1,3 @@
+-from typing import Any
+ 
+ 
+ class Singleton:
+diff -ruN orig/src/electionguard/tracker.py build/src/electionguard/tracker.py
+--- orig/src/electionguard/tracker.py	2020-10-23 19:36:42.000000000 +0200
++++ build/src/electionguard/tracker.py	2020-10-23 20:51:18.000000000 +0200
+@@ -1,4 +1,3 @@
+-from typing import List, Optional
+ from .hash import hash_elems
+ from .group import ElementModQ
+ from .words import get_word
+@@ -17,10 +16,10 @@
+ 
+ 
+ def get_rotating_tracker_hash(
+-    prev_hash , timestamp , ballot_hash 
++    prev_hash , timestamp , ballot_hash
+ )  :
+     """
+-    Get the rotated tracker hash for a particular ballot. 
++    Get the rotated tracker hash for a particular ballot.
+     :param prev_hash: Previous hash or starting hash from device
+     :param timestamp: Timestamp in ticks
+     :param ballot_hash: Hash of ballot to track
 diff -ruN orig/src/electionguard/utils.py build/src/electionguard/utils.py
 --- orig/src/electionguard/utils.py	2020-10-23 19:36:42.000000000 +0200
-+++ build/src/electionguard/utils.py	2020-10-23 19:36:23.000000000 +0200
-@@ -1,5 +1,4 @@
++++ build/src/electionguard/utils.py	2020-10-23 20:51:14.000000000 +0200
+@@ -1,10 +1,5 @@
  from datetime import datetime, timezone
 -from os import mkdir, path
  from re import sub
- from typing import Callable, Optional, TypeVar
+-from typing import Callable, Optional, TypeVar
+-
+-T = TypeVar("T")
+-U = TypeVar("U")
  
-@@ -18,7 +17,7 @@
+ 
+ def get_optional(optional )  :
+@@ -18,7 +13,7 @@
  
  
  def match_optional(
@@ -326,6 +1247,15 @@ diff -ruN orig/src/electionguard/utils.py build/src/electionguard/utils.py
  )  :
      """
      General-purpose pattern-matching function to handle `Optional`.
+diff -ruN orig/src/electionguard/words.py build/src/electionguard/words.py
+--- orig/src/electionguard/words.py	2020-10-23 19:36:43.000000000 +0200
++++ build/src/electionguard/words.py	2020-10-23 20:51:11.000000000 +0200
+@@ -1,5 +1,3 @@
+-from typing import Optional
+-
+ MIN_INDEX = 0
+ MAX_INDEX = 4095
+ 
 diff -ruN orig/src/secure_random.js build/src/secure_random.js
 --- orig/src/secure_random.js	1970-01-01 01:00:00.000000000 +0100
 +++ build/src/secure_random.js	2020-10-23 19:07:19.000000000 +0200

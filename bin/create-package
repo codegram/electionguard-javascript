@@ -3,4 +3,5 @@
 rm -rf $DIST_DIR
 mkdir -p $DIST_DIR
 
-uglifyjs --compress --mangle --output $DIST_DIR/voter.min.js -- $(ls $TRANSPILE_DIR/*.js)
+rollup $TRANSPILE_DIR/__init__.js --file $DIST_DIR/voter.js --format umd --name "voter"
+uglifyjs --compress --mangle --top-level --output $DIST_DIR/voter.min.js -- $DIST_DIR/voter.js
