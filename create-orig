@@ -1,0 +1,10 @@
+#!/bin/bash
+
+rm -rf $ORIG_DIR
+mkdir -p $ORIG_DIR
+
+for file in $(cat sources.txt)
+do
+  mkdir -p $ORIG_DIR/$(dirname $file)
+  strip-hints --to-empty electionguard-python/$file > $ORIG_DIR/$file
+done

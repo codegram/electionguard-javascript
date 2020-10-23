@@ -1,0 +1,10 @@
+#!/bin/bash
+
+rm -rf $BUILD_DIR
+mkdir -p $BUILD_DIR
+
+for file in $(cat sources.txt)
+do
+  mkdir -p $BUILD_DIR/$(dirname $file)
+  strip-hints --to-empty electionguard-python/$file > $BUILD_DIR/$file
+done
