@@ -1,24 +1,28 @@
-.PHONY: all install transpile
+.PHONY: all install transpile package
 
 include Makefile.envs
 
-all: build transpile
+all: build transpile package
 
 install:
+	npm install uglify-es -g
 	pip install transpile strip-hints
 
 build:
-	./create-build
-	./apply-patches
+	bin/create-build
+	bin/apply-patches
 
 transpile:
-	./run-transpile
+	bin/run-transpile
+
+package:
+	bin/create-package
 
 dev: build
-	./create-orig
+	bin/create-orig
 
 patches:
-	./create-patches
+	bin/create-patches
 
 clean:
 	rm -rf ${BUILD_DIR} ${ORIG_DIR} ${TRANSPILE_DIR}

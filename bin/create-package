@@ -1,0 +1,6 @@
+#!/bin/bash
+
+rm -rf $DIST_DIR
+mkdir -p $DIST_DIR
+
+uglifyjs --compress --mangle --output $DIST_DIR/voter.min.js -- $(ls $TRANSPILE_DIR/*.js)
