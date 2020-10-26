@@ -6,8 +6,8 @@ rm -rf $TRANSPILE_DIR $TEMP_DIR
 cp -rf $BUILD_DIR $TEMP_DIR
 
 cd $TEMP_DIR
-transcrypt -n src/electionguard/__init__.py
+transcrypt -n __init__.py
 cd ..
 
-mv $TEMP_DIR/src/electionguard/__target__/ $TRANSPILE_DIR
+mv $TEMP_DIR/__target__/ $TRANSPILE_DIR
 rm -rf $TEMP_DIR

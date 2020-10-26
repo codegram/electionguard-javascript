@@ -1,38 +1,218 @@
-Binary files orig/src/electionguard/.DS_Store and build/src/electionguard/.DS_Store differ
-diff -ruN orig/src/electionguard/BigInteger.js build/src/electionguard/BigInteger.js
---- orig/src/electionguard/BigInteger.js	1970-01-01 01:00:00.000000000 +0100
-+++ build/src/electionguard/BigInteger.js	2020-10-23 20:35:55.000000000 +0200
-@@ -0,0 +1 @@
-+export var bigInt=function(undefined){"use strict";var BASE=1e7,LOG_BASE=7,MAX_INT=9007199254740992,MAX_INT_ARR=smallToArray(MAX_INT),DEFAULT_ALPHABET="0123456789abcdefghijklmnopqrstuvwxyz";var supportsNativeBigInt=typeof BigInt==="function";function Integer(v,radix,alphabet,caseSensitive){if(typeof v==="undefined")return Integer[0];if(typeof radix!=="undefined")return+radix===10&&!alphabet?parseValue(v):parseBase(v,radix,alphabet,caseSensitive);return parseValue(v)}function BigInteger(value,sign){this.value=value;this.sign=sign;this.isSmall=false}BigInteger.prototype=Object.create(Integer.prototype);function SmallInteger(value){this.value=value;this.sign=value<0;this.isSmall=true}SmallInteger.prototype=Object.create(Integer.prototype);function NativeBigInt(value){this.value=value}NativeBigInt.prototype=Object.create(Integer.prototype);function isPrecise(n){return-MAX_INT<n&&n<MAX_INT}function smallToArray(n){if(n<1e7)return[n];if(n<1e14)return[n%1e7,Math.floor(n/1e7)];return[n%1e7,Math.floor(n/1e7)%1e7,Math.floor(n/1e14)]}function arrayToSmall(arr){trim(arr);var length=arr.length;if(length<4&&compareAbs(arr,MAX_INT_ARR)<0){switch(length){case 0:return 0;case 1:return arr[0];case 2:return arr[0]+arr[1]*BASE;default:return arr[0]+(arr[1]+arr[2]*BASE)*BASE}}return arr}function trim(v){var i=v.length;while(v[--i]===0);v.length=i+1}function createArray(length){var x=new Array(length);var i=-1;while(++i<length){x[i]=0}return x}function truncate(n){if(n>0)return Math.floor(n);return Math.ceil(n)}function add(a,b){var l_a=a.length,l_b=b.length,r=new Array(l_a),carry=0,base=BASE,sum,i;for(i=0;i<l_b;i++){sum=a[i]+b[i]+carry;carry=sum>=base?1:0;r[i]=sum-carry*base}while(i<l_a){sum=a[i]+carry;carry=sum===base?1:0;r[i++]=sum-carry*base}if(carry>0)r.push(carry);return r}function addAny(a,b){if(a.length>=b.length)return add(a,b);return add(b,a)}function addSmall(a,carry){var l=a.length,r=new Array(l),base=BASE,sum,i;for(i=0;i<l;i++){sum=a[i]-base+carry;carry=Math.floor(sum/base);r[i]=sum-carry*base;carry+=1}while(carry>0){r[i++]=carry%base;carry=Math.floor(carry/base)}return r}BigInteger.prototype.add=function(v){var n=parseValue(v);if(this.sign!==n.sign){return this.subtract(n.negate())}var a=this.value,b=n.value;if(n.isSmall){return new BigInteger(addSmall(a,Math.abs(b)),this.sign)}return new BigInteger(addAny(a,b),this.sign)};BigInteger.prototype.plus=BigInteger.prototype.add;SmallInteger.prototype.add=function(v){var n=parseValue(v);var a=this.value;if(a<0!==n.sign){return this.subtract(n.negate())}var b=n.value;if(n.isSmall){if(isPrecise(a+b))return new SmallInteger(a+b);b=smallToArray(Math.abs(b))}return new BigInteger(addSmall(b,Math.abs(a)),a<0)};SmallInteger.prototype.plus=SmallInteger.prototype.add;NativeBigInt.prototype.add=function(v){return new NativeBigInt(this.value+parseValue(v).value)};NativeBigInt.prototype.plus=NativeBigInt.prototype.add;function subtract(a,b){var a_l=a.length,b_l=b.length,r=new Array(a_l),borrow=0,base=BASE,i,difference;for(i=0;i<b_l;i++){difference=a[i]-borrow-b[i];if(difference<0){difference+=base;borrow=1}else borrow=0;r[i]=difference}for(i=b_l;i<a_l;i++){difference=a[i]-borrow;if(difference<0)difference+=base;else{r[i++]=difference;break}r[i]=difference}for(;i<a_l;i++){r[i]=a[i]}trim(r);return r}function subtractAny(a,b,sign){var value;if(compareAbs(a,b)>=0){value=subtract(a,b)}else{value=subtract(b,a);sign=!sign}value=arrayToSmall(value);if(typeof value==="number"){if(sign)value=-value;return new SmallInteger(value)}return new BigInteger(value,sign)}function subtractSmall(a,b,sign){var l=a.length,r=new Array(l),carry=-b,base=BASE,i,difference;for(i=0;i<l;i++){difference=a[i]+carry;carry=Math.floor(difference/base);difference%=base;r[i]=difference<0?difference+base:difference}r=arrayToSmall(r);if(typeof r==="number"){if(sign)r=-r;return new SmallInteger(r)}return new BigInteger(r,sign)}BigInteger.prototype.subtract=function(v){var n=parseValue(v);if(this.sign!==n.sign){return this.add(n.negate())}var a=this.value,b=n.value;if(n.isSmall)return subtractSmall(a,Math.abs(b),this.sign);return subtractAny(a,b,this.sign)};BigInteger.prototype.minus=BigInteger.prototype.subtract;SmallInteger.prototype.subtract=function(v){var n=parseValue(v);var a=this.value;if(a<0!==n.sign){return this.add(n.negate())}var b=n.value;if(n.isSmall){return new SmallInteger(a-b)}return subtractSmall(b,Math.abs(a),a>=0)};SmallInteger.prototype.minus=SmallInteger.prototype.subtract;NativeBigInt.prototype.subtract=function(v){return new NativeBigInt(this.value-parseValue(v).value)};NativeBigInt.prototype.minus=NativeBigInt.prototype.subtract;BigInteger.prototype.negate=function(){return new BigInteger(this.value,!this.sign)};SmallInteger.prototype.negate=function(){var sign=this.sign;var small=new SmallInteger(-this.value);small.sign=!sign;return small};NativeBigInt.prototype.negate=function(){return new NativeBigInt(-this.value)};BigInteger.prototype.abs=function(){return new BigInteger(this.value,false)};SmallInteger.prototype.abs=function(){return new SmallInteger(Math.abs(this.value))};NativeBigInt.prototype.abs=function(){return new NativeBigInt(this.value>=0?this.value:-this.value)};function multiplyLong(a,b){var a_l=a.length,b_l=b.length,l=a_l+b_l,r=createArray(l),base=BASE,product,carry,i,a_i,b_j;for(i=0;i<a_l;++i){a_i=a[i];for(var j=0;j<b_l;++j){b_j=b[j];product=a_i*b_j+r[i+j];carry=Math.floor(product/base);r[i+j]=product-carry*base;r[i+j+1]+=carry}}trim(r);return r}function multiplySmall(a,b){var l=a.length,r=new Array(l),base=BASE,carry=0,product,i;for(i=0;i<l;i++){product=a[i]*b+carry;carry=Math.floor(product/base);r[i]=product-carry*base}while(carry>0){r[i++]=carry%base;carry=Math.floor(carry/base)}return r}function shiftLeft(x,n){var r=[];while(n-- >0)r.push(0);return r.concat(x)}function multiplyKaratsuba(x,y){var n=Math.max(x.length,y.length);if(n<=30)return multiplyLong(x,y);n=Math.ceil(n/2);var b=x.slice(n),a=x.slice(0,n),d=y.slice(n),c=y.slice(0,n);var ac=multiplyKaratsuba(a,c),bd=multiplyKaratsuba(b,d),abcd=multiplyKaratsuba(addAny(a,b),addAny(c,d));var product=addAny(addAny(ac,shiftLeft(subtract(subtract(abcd,ac),bd),n)),shiftLeft(bd,2*n));trim(product);return product}function useKaratsuba(l1,l2){return-.012*l1-.012*l2+15e-6*l1*l2>0}BigInteger.prototype.multiply=function(v){var n=parseValue(v),a=this.value,b=n.value,sign=this.sign!==n.sign,abs;if(n.isSmall){if(b===0)return Integer[0];if(b===1)return this;if(b===-1)return this.negate();abs=Math.abs(b);if(abs<BASE){return new BigInteger(multiplySmall(a,abs),sign)}b=smallToArray(abs)}if(useKaratsuba(a.length,b.length))return new BigInteger(multiplyKaratsuba(a,b),sign);return new BigInteger(multiplyLong(a,b),sign)};BigInteger.prototype.times=BigInteger.prototype.multiply;function multiplySmallAndArray(a,b,sign){if(a<BASE){return new BigInteger(multiplySmall(b,a),sign)}return new BigInteger(multiplyLong(b,smallToArray(a)),sign)}SmallInteger.prototype._multiplyBySmall=function(a){if(isPrecise(a.value*this.value)){return new SmallInteger(a.value*this.value)}return multiplySmallAndArray(Math.abs(a.value),smallToArray(Math.abs(this.value)),this.sign!==a.sign)};BigInteger.prototype._multiplyBySmall=function(a){if(a.value===0)return Integer[0];if(a.value===1)return this;if(a.value===-1)return this.negate();return multiplySmallAndArray(Math.abs(a.value),this.value,this.sign!==a.sign)};SmallInteger.prototype.multiply=function(v){return parseValue(v)._multiplyBySmall(this)};SmallInteger.prototype.times=SmallInteger.prototype.multiply;NativeBigInt.prototype.multiply=function(v){return new NativeBigInt(this.value*parseValue(v).value)};NativeBigInt.prototype.times=NativeBigInt.prototype.multiply;function square(a){var l=a.length,r=createArray(l+l),base=BASE,product,carry,i,a_i,a_j;for(i=0;i<l;i++){a_i=a[i];carry=0-a_i*a_i;for(var j=i;j<l;j++){a_j=a[j];product=2*(a_i*a_j)+r[i+j]+carry;carry=Math.floor(product/base);r[i+j]=product-carry*base}r[i+l]=carry}trim(r);return r}BigInteger.prototype.square=function(){return new BigInteger(square(this.value),false)};SmallInteger.prototype.square=function(){var value=this.value*this.value;if(isPrecise(value))return new SmallInteger(value);return new BigInteger(square(smallToArray(Math.abs(this.value))),false)};NativeBigInt.prototype.square=function(v){return new NativeBigInt(this.value*this.value)};function divMod1(a,b){var a_l=a.length,b_l=b.length,base=BASE,result=createArray(b.length),divisorMostSignificantDigit=b[b_l-1],lambda=Math.ceil(base/(2*divisorMostSignificantDigit)),remainder=multiplySmall(a,lambda),divisor=multiplySmall(b,lambda),quotientDigit,shift,carry,borrow,i,l,q;if(remainder.length<=a_l)remainder.push(0);divisor.push(0);divisorMostSignificantDigit=divisor[b_l-1];for(shift=a_l-b_l;shift>=0;shift--){quotientDigit=base-1;if(remainder[shift+b_l]!==divisorMostSignificantDigit){quotientDigit=Math.floor((remainder[shift+b_l]*base+remainder[shift+b_l-1])/divisorMostSignificantDigit)}carry=0;borrow=0;l=divisor.length;for(i=0;i<l;i++){carry+=quotientDigit*divisor[i];q=Math.floor(carry/base);borrow+=remainder[shift+i]-(carry-q*base);carry=q;if(borrow<0){remainder[shift+i]=borrow+base;borrow=-1}else{remainder[shift+i]=borrow;borrow=0}}while(borrow!==0){quotientDigit-=1;carry=0;for(i=0;i<l;i++){carry+=remainder[shift+i]-base+divisor[i];if(carry<0){remainder[shift+i]=carry+base;carry=0}else{remainder[shift+i]=carry;carry=1}}borrow+=carry}result[shift]=quotientDigit}remainder=divModSmall(remainder,lambda)[0];return[arrayToSmall(result),arrayToSmall(remainder)]}function divMod2(a,b){var a_l=a.length,b_l=b.length,result=[],part=[],base=BASE,guess,xlen,highx,highy,check;while(a_l){part.unshift(a[--a_l]);trim(part);if(compareAbs(part,b)<0){result.push(0);continue}xlen=part.length;highx=part[xlen-1]*base+part[xlen-2];highy=b[b_l-1]*base+b[b_l-2];if(xlen>b_l){highx=(highx+1)*base}guess=Math.ceil(highx/highy);do{check=multiplySmall(b,guess);if(compareAbs(check,part)<=0)break;guess--}while(guess);result.push(guess);part=subtract(part,check)}result.reverse();return[arrayToSmall(result),arrayToSmall(part)]}function divModSmall(value,lambda){var length=value.length,quotient=createArray(length),base=BASE,i,q,remainder,divisor;remainder=0;for(i=length-1;i>=0;--i){divisor=remainder*base+value[i];q=truncate(divisor/lambda);remainder=divisor-q*lambda;quotient[i]=q|0}return[quotient,remainder|0]}function divModAny(self,v){var value,n=parseValue(v);if(supportsNativeBigInt){return[new NativeBigInt(self.value/n.value),new NativeBigInt(self.value%n.value)]}var a=self.value,b=n.value;var quotient;if(b===0)throw new Error("Cannot divide by zero");if(self.isSmall){if(n.isSmall){return[new SmallInteger(truncate(a/b)),new SmallInteger(a%b)]}return[Integer[0],self]}if(n.isSmall){if(b===1)return[self,Integer[0]];if(b==-1)return[self.negate(),Integer[0]];var abs=Math.abs(b);if(abs<BASE){value=divModSmall(a,abs);quotient=arrayToSmall(value[0]);var remainder=value[1];if(self.sign)remainder=-remainder;if(typeof quotient==="number"){if(self.sign!==n.sign)quotient=-quotient;return[new SmallInteger(quotient),new SmallInteger(remainder)]}return[new BigInteger(quotient,self.sign!==n.sign),new SmallInteger(remainder)]}b=smallToArray(abs)}var comparison=compareAbs(a,b);if(comparison===-1)return[Integer[0],self];if(comparison===0)return[Integer[self.sign===n.sign?1:-1],Integer[0]];if(a.length+b.length<=200)value=divMod1(a,b);else value=divMod2(a,b);quotient=value[0];var qSign=self.sign!==n.sign,mod=value[1],mSign=self.sign;if(typeof quotient==="number"){if(qSign)quotient=-quotient;quotient=new SmallInteger(quotient)}else quotient=new BigInteger(quotient,qSign);if(typeof mod==="number"){if(mSign)mod=-mod;mod=new SmallInteger(mod)}else mod=new BigInteger(mod,mSign);return[quotient,mod]}BigInteger.prototype.divmod=function(v){var result=divModAny(this,v);return{quotient:result[0],remainder:result[1]}};NativeBigInt.prototype.divmod=SmallInteger.prototype.divmod=BigInteger.prototype.divmod;BigInteger.prototype.divide=function(v){return divModAny(this,v)[0]};NativeBigInt.prototype.over=NativeBigInt.prototype.divide=SmallInteger.prototype.over=SmallInteger.prototype.divide=BigInteger.prototype.over=BigInteger.prototype.divide;BigInteger.prototype.mod=function(v){return divModAny(this,v)[1]};NativeBigInt.prototype.mod=NativeBigInt.prototype.remainder=SmallInteger.prototype.remainder=SmallInteger.prototype.mod=BigInteger.prototype.remainder=BigInteger.prototype.mod;BigInteger.prototype.pow=function(v){var n=parseValue(v),a=this.value,b=n.value,value,x,y;if(b===0)return Integer[1];if(a===0)return Integer[0];if(a===1)return Integer[1];if(a===-1)return n.isEven()?Integer[1]:Integer[-1];if(n.sign){return Integer[0]}if(!n.isSmall)throw new Error("The exponent "+n.toString()+" is too large.");if(this.isSmall){if(isPrecise(value=Math.pow(a,b)))return new SmallInteger(truncate(value))}x=this;y=Integer[1];while(true){if(b&1===1){y=y.times(x);--b}if(b===0)break;b/=2;x=x.square()}return y};SmallInteger.prototype.pow=BigInteger.prototype.pow;var pow;if(supportsNativeBigInt){pow=eval("(a,b)=>a**b")}NativeBigInt.prototype.pow=function(v){var n=parseValue(v);var a=this.value,b=n.value;if(b===BigInt(0))return Integer[1];if(a===BigInt(0))return Integer[0];if(a===BigInt(1))return Integer[1];if(a===BigInt(-1))return n.isEven()?Integer[1]:Integer[-1];if(n.isNegative())return new NativeBigInt(BigInt(0));return new NativeBigInt(pow(a,b))};BigInteger.prototype.modPow=function(exp,mod){exp=parseValue(exp);mod=parseValue(mod);if(mod.isZero())throw new Error("Cannot take modPow with modulus 0");var r=Integer[1],base=this.mod(mod);while(exp.isPositive()){if(base.isZero())return Integer[0];if(exp.isOdd())r=r.multiply(base).mod(mod);exp=exp.divide(2);base=base.square().mod(mod)}return r};NativeBigInt.prototype.modPow=SmallInteger.prototype.modPow=BigInteger.prototype.modPow;function compareAbs(a,b){if(a.length!==b.length){return a.length>b.length?1:-1}for(var i=a.length-1;i>=0;i--){if(a[i]!==b[i])return a[i]>b[i]?1:-1}return 0}BigInteger.prototype.compareAbs=function(v){var n=parseValue(v),a=this.value,b=n.value;if(n.isSmall)return 1;return compareAbs(a,b)};SmallInteger.prototype.compareAbs=function(v){var n=parseValue(v),a=Math.abs(this.value),b=n.value;if(n.isSmall){b=Math.abs(b);return a===b?0:a>b?1:-1}return-1};NativeBigInt.prototype.compareAbs=function(v){var a=this.value;var b=parseValue(v).value;a=a>=0?a:-a;b=b>=0?b:-b;return a===b?0:a>b?1:-1};BigInteger.prototype.compare=function(v){if(v===Infinity){return-1}if(v===-Infinity){return 1}var n=parseValue(v),a=this.value,b=n.value;if(this.sign!==n.sign){return n.sign?1:-1}if(n.isSmall){return this.sign?-1:1}return compareAbs(a,b)*(this.sign?-1:1)};BigInteger.prototype.compareTo=BigInteger.prototype.compare;SmallInteger.prototype.compare=function(v){if(v===Infinity){return-1}if(v===-Infinity){return 1}var n=parseValue(v),a=this.value,b=n.value;if(n.isSmall){return a==b?0:a>b?1:-1}if(a<0!==n.sign){return a<0?-1:1}return a<0?1:-1};SmallInteger.prototype.compareTo=SmallInteger.prototype.compare;NativeBigInt.prototype.compare=function(v){if(v===Infinity){return-1}if(v===-Infinity){return 1}var a=this.value;var b=parseValue(v).value;return a===b?0:a>b?1:-1};NativeBigInt.prototype.compareTo=NativeBigInt.prototype.compare;BigInteger.prototype.equals=function(v){return this.compare(v)===0};NativeBigInt.prototype.eq=NativeBigInt.prototype.equals=SmallInteger.prototype.eq=SmallInteger.prototype.equals=BigInteger.prototype.eq=BigInteger.prototype.equals;BigInteger.prototype.notEquals=function(v){return this.compare(v)!==0};NativeBigInt.prototype.neq=NativeBigInt.prototype.notEquals=SmallInteger.prototype.neq=SmallInteger.prototype.notEquals=BigInteger.prototype.neq=BigInteger.prototype.notEquals;BigInteger.prototype.greater=function(v){return this.compare(v)>0};NativeBigInt.prototype.gt=NativeBigInt.prototype.greater=SmallInteger.prototype.gt=SmallInteger.prototype.greater=BigInteger.prototype.gt=BigInteger.prototype.greater;BigInteger.prototype.lesser=function(v){return this.compare(v)<0};NativeBigInt.prototype.lt=NativeBigInt.prototype.lesser=SmallInteger.prototype.lt=SmallInteger.prototype.lesser=BigInteger.prototype.lt=BigInteger.prototype.lesser;BigInteger.prototype.greaterOrEquals=function(v){return this.compare(v)>=0};NativeBigInt.prototype.geq=NativeBigInt.prototype.greaterOrEquals=SmallInteger.prototype.geq=SmallInteger.prototype.greaterOrEquals=BigInteger.prototype.geq=BigInteger.prototype.greaterOrEquals;BigInteger.prototype.lesserOrEquals=function(v){return this.compare(v)<=0};NativeBigInt.prototype.leq=NativeBigInt.prototype.lesserOrEquals=SmallInteger.prototype.leq=SmallInteger.prototype.lesserOrEquals=BigInteger.prototype.leq=BigInteger.prototype.lesserOrEquals;BigInteger.prototype.isEven=function(){return(this.value[0]&1)===0};SmallInteger.prototype.isEven=function(){return(this.value&1)===0};NativeBigInt.prototype.isEven=function(){return(this.value&BigInt(1))===BigInt(0)};BigInteger.prototype.isOdd=function(){return(this.value[0]&1)===1};SmallInteger.prototype.isOdd=function(){return(this.value&1)===1};NativeBigInt.prototype.isOdd=function(){return(this.value&BigInt(1))===BigInt(1)};BigInteger.prototype.isPositive=function(){return!this.sign};SmallInteger.prototype.isPositive=function(){return this.value>0};NativeBigInt.prototype.isPositive=SmallInteger.prototype.isPositive;BigInteger.prototype.isNegative=function(){return this.sign};SmallInteger.prototype.isNegative=function(){return this.value<0};NativeBigInt.prototype.isNegative=SmallInteger.prototype.isNegative;BigInteger.prototype.isUnit=function(){return false};SmallInteger.prototype.isUnit=function(){return Math.abs(this.value)===1};NativeBigInt.prototype.isUnit=function(){return this.abs().value===BigInt(1)};BigInteger.prototype.isZero=function(){return false};SmallInteger.prototype.isZero=function(){return this.value===0};NativeBigInt.prototype.isZero=function(){return this.value===BigInt(0)};BigInteger.prototype.isDivisibleBy=function(v){var n=parseValue(v);if(n.isZero())return false;if(n.isUnit())return true;if(n.compareAbs(2)===0)return this.isEven();return this.mod(n).isZero()};NativeBigInt.prototype.isDivisibleBy=SmallInteger.prototype.isDivisibleBy=BigInteger.prototype.isDivisibleBy;function isBasicPrime(v){var n=v.abs();if(n.isUnit())return false;if(n.equals(2)||n.equals(3)||n.equals(5))return true;if(n.isEven()||n.isDivisibleBy(3)||n.isDivisibleBy(5))return false;if(n.lesser(49))return true}function millerRabinTest(n,a){var nPrev=n.prev(),b=nPrev,r=0,d,t,i,x;while(b.isEven())b=b.divide(2),r++;next:for(i=0;i<a.length;i++){if(n.lesser(a[i]))continue;x=bigInt(a[i]).modPow(b,n);if(x.isUnit()||x.equals(nPrev))continue;for(d=r-1;d!=0;d--){x=x.square().mod(n);if(x.isUnit())return false;if(x.equals(nPrev))continue next}return false}return true}BigInteger.prototype.isPrime=function(strict){var isPrime=isBasicPrime(this);if(isPrime!==undefined)return isPrime;var n=this.abs();var bits=n.bitLength();if(bits<=64)return millerRabinTest(n,[2,325,9375,28178,450775,9780504,1795265022]);var logN=Math.log(2)*bits.toJSNumber();var t=Math.ceil(strict===true?2*Math.pow(logN,2):logN);for(var a=[],i=0;i<t;i++){a.push(bigInt(i+2))}return millerRabinTest(n,a)};NativeBigInt.prototype.isPrime=SmallInteger.prototype.isPrime=BigInteger.prototype.isPrime;BigInteger.prototype.isProbablePrime=function(iterations){var isPrime=isBasicPrime(this);if(isPrime!==undefined)return isPrime;var n=this.abs();var t=iterations===undefined?5:iterations;for(var a=[],i=0;i<t;i++){a.push(bigInt.randBetween(2,n.minus(2)))}return millerRabinTest(n,a)};NativeBigInt.prototype.isProbablePrime=SmallInteger.prototype.isProbablePrime=BigInteger.prototype.isProbablePrime;BigInteger.prototype.modInv=function(n){var t=bigInt.zero,newT=bigInt.one,r=parseValue(n),newR=this.abs(),q,lastT,lastR;while(!newR.isZero()){q=r.divide(newR);lastT=t;lastR=r;t=newT;r=newR;newT=lastT.subtract(q.multiply(newT));newR=lastR.subtract(q.multiply(newR))}if(!r.isUnit())throw new Error(this.toString()+" and "+n.toString()+" are not co-prime");if(t.compare(0)===-1){t=t.add(n)}if(this.isNegative()){return t.negate()}return t};NativeBigInt.prototype.modInv=SmallInteger.prototype.modInv=BigInteger.prototype.modInv;BigInteger.prototype.next=function(){var value=this.value;if(this.sign){return subtractSmall(value,1,this.sign)}return new BigInteger(addSmall(value,1),this.sign)};SmallInteger.prototype.next=function(){var value=this.value;if(value+1<MAX_INT)return new SmallInteger(value+1);return new BigInteger(MAX_INT_ARR,false)};NativeBigInt.prototype.next=function(){return new NativeBigInt(this.value+BigInt(1))};BigInteger.prototype.prev=function(){var value=this.value;if(this.sign){return new BigInteger(addSmall(value,1),true)}return subtractSmall(value,1,this.sign)};SmallInteger.prototype.prev=function(){var value=this.value;if(value-1>-MAX_INT)return new SmallInteger(value-1);return new BigInteger(MAX_INT_ARR,true)};NativeBigInt.prototype.prev=function(){return new NativeBigInt(this.value-BigInt(1))};var powersOfTwo=[1];while(2*powersOfTwo[powersOfTwo.length-1]<=BASE)powersOfTwo.push(2*powersOfTwo[powersOfTwo.length-1]);var powers2Length=powersOfTwo.length,highestPower2=powersOfTwo[powers2Length-1];function shift_isSmall(n){return Math.abs(n)<=BASE}BigInteger.prototype.shiftLeft=function(v){var n=parseValue(v).toJSNumber();if(!shift_isSmall(n)){throw new Error(String(n)+" is too large for shifting.")}if(n<0)return this.shiftRight(-n);var result=this;if(result.isZero())return result;while(n>=powers2Length){result=result.multiply(highestPower2);n-=powers2Length-1}return result.multiply(powersOfTwo[n])};NativeBigInt.prototype.shiftLeft=SmallInteger.prototype.shiftLeft=BigInteger.prototype.shiftLeft;BigInteger.prototype.shiftRight=function(v){var remQuo;var n=parseValue(v).toJSNumber();if(!shift_isSmall(n)){throw new Error(String(n)+" is too large for shifting.")}if(n<0)return this.shiftLeft(-n);var result=this;while(n>=powers2Length){if(result.isZero()||result.isNegative()&&result.isUnit())return result;remQuo=divModAny(result,highestPower2);result=remQuo[1].isNegative()?remQuo[0].prev():remQuo[0];n-=powers2Length-1}remQuo=divModAny(result,powersOfTwo[n]);return remQuo[1].isNegative()?remQuo[0].prev():remQuo[0]};NativeBigInt.prototype.shiftRight=SmallInteger.prototype.shiftRight=BigInteger.prototype.shiftRight;function bitwise(x,y,fn){y=parseValue(y);var xSign=x.isNegative(),ySign=y.isNegative();var xRem=xSign?x.not():x,yRem=ySign?y.not():y;var xDigit=0,yDigit=0;var xDivMod=null,yDivMod=null;var result=[];while(!xRem.isZero()||!yRem.isZero()){xDivMod=divModAny(xRem,highestPower2);xDigit=xDivMod[1].toJSNumber();if(xSign){xDigit=highestPower2-1-xDigit}yDivMod=divModAny(yRem,highestPower2);yDigit=yDivMod[1].toJSNumber();if(ySign){yDigit=highestPower2-1-yDigit}xRem=xDivMod[0];yRem=yDivMod[0];result.push(fn(xDigit,yDigit))}var sum=fn(xSign?1:0,ySign?1:0)!==0?bigInt(-1):bigInt(0);for(var i=result.length-1;i>=0;i-=1){sum=sum.multiply(highestPower2).add(bigInt(result[i]))}return sum}BigInteger.prototype.not=function(){return this.negate().prev()};NativeBigInt.prototype.not=SmallInteger.prototype.not=BigInteger.prototype.not;BigInteger.prototype.and=function(n){return bitwise(this,n,function(a,b){return a&b})};NativeBigInt.prototype.and=SmallInteger.prototype.and=BigInteger.prototype.and;BigInteger.prototype.or=function(n){return bitwise(this,n,function(a,b){return a|b})};NativeBigInt.prototype.or=SmallInteger.prototype.or=BigInteger.prototype.or;BigInteger.prototype.xor=function(n){return bitwise(this,n,function(a,b){return a^b})};NativeBigInt.prototype.xor=SmallInteger.prototype.xor=BigInteger.prototype.xor;var LOBMASK_I=1<<30,LOBMASK_BI=(BASE&-BASE)*(BASE&-BASE)|LOBMASK_I;function roughLOB(n){var v=n.value,x=typeof v==="number"?v|LOBMASK_I:typeof v==="bigint"?v|BigInt(LOBMASK_I):v[0]+v[1]*BASE|LOBMASK_BI;return x&-x}function integerLogarithm(value,base){if(base.compareTo(value)<=0){var tmp=integerLogarithm(value,base.square(base));var p=tmp.p;var e=tmp.e;var t=p.multiply(base);return t.compareTo(value)<=0?{p:t,e:e*2+1}:{p:p,e:e*2}}return{p:bigInt(1),e:0}}BigInteger.prototype.bitLength=function(){var n=this;if(n.compareTo(bigInt(0))<0){n=n.negate().subtract(bigInt(1))}if(n.compareTo(bigInt(0))===0){return bigInt(0)}return bigInt(integerLogarithm(n,bigInt(2)).e).add(bigInt(1))};NativeBigInt.prototype.bitLength=SmallInteger.prototype.bitLength=BigInteger.prototype.bitLength;function max(a,b){a=parseValue(a);b=parseValue(b);return a.greater(b)?a:b}function min(a,b){a=parseValue(a);b=parseValue(b);return a.lesser(b)?a:b}function gcd(a,b){a=parseValue(a).abs();b=parseValue(b).abs();if(a.equals(b))return a;if(a.isZero())return b;if(b.isZero())return a;var c=Integer[1],d,t;while(a.isEven()&&b.isEven()){d=min(roughLOB(a),roughLOB(b));a=a.divide(d);b=b.divide(d);c=c.multiply(d)}while(a.isEven()){a=a.divide(roughLOB(a))}do{while(b.isEven()){b=b.divide(roughLOB(b))}if(a.greater(b)){t=b;b=a;a=t}b=b.subtract(a)}while(!b.isZero());return c.isUnit()?a:a.multiply(c)}function lcm(a,b){a=parseValue(a).abs();b=parseValue(b).abs();return a.divide(gcd(a,b)).multiply(b)}function randBetween(a,b){a=parseValue(a);b=parseValue(b);var low=min(a,b),high=max(a,b);var range=high.subtract(low).add(1);if(range.isSmall)return low.add(Math.floor(Math.random()*range));var digits=toBase(range,BASE).value;var result=[],restricted=true;for(var i=0;i<digits.length;i++){var top=restricted?digits[i]:BASE;var digit=truncate(Math.random()*top);result.push(digit);if(digit<top)restricted=false}return low.add(Integer.fromArray(result,BASE,false))}var parseBase=function(text,base,alphabet,caseSensitive){alphabet=alphabet||DEFAULT_ALPHABET;text=String(text);if(!caseSensitive){text=text.toLowerCase();alphabet=alphabet.toLowerCase()}var length=text.length;var i;var absBase=Math.abs(base);var alphabetValues={};for(i=0;i<alphabet.length;i++){alphabetValues[alphabet[i]]=i}for(i=0;i<length;i++){var c=text[i];if(c==="-")continue;if(c in alphabetValues){if(alphabetValues[c]>=absBase){if(c==="1"&&absBase===1)continue;throw new Error(c+" is not a valid digit in base "+base+".")}}}base=parseValue(base);var digits=[];var isNegative=text[0]==="-";for(i=isNegative?1:0;i<text.length;i++){var c=text[i];if(c in alphabetValues)digits.push(parseValue(alphabetValues[c]));else if(c==="<"){var start=i;do{i++}while(text[i]!==">"&&i<text.length);digits.push(parseValue(text.slice(start+1,i)))}else throw new Error(c+" is not a valid character")}return parseBaseFromArray(digits,base,isNegative)};function parseBaseFromArray(digits,base,isNegative){var val=Integer[0],pow=Integer[1],i;for(i=digits.length-1;i>=0;i--){val=val.add(digits[i].times(pow));pow=pow.times(base)}return isNegative?val.negate():val}function stringify(digit,alphabet){alphabet=alphabet||DEFAULT_ALPHABET;if(digit<alphabet.length){return alphabet[digit]}return"<"+digit+">"}function toBase(n,base){base=bigInt(base);if(base.isZero()){if(n.isZero())return{value:[0],isNegative:false};throw new Error("Cannot convert nonzero numbers to base 0.")}if(base.equals(-1)){if(n.isZero())return{value:[0],isNegative:false};if(n.isNegative())return{value:[].concat.apply([],Array.apply(null,Array(-n.toJSNumber())).map(Array.prototype.valueOf,[1,0])),isNegative:false};var arr=Array.apply(null,Array(n.toJSNumber()-1)).map(Array.prototype.valueOf,[0,1]);arr.unshift([1]);return{value:[].concat.apply([],arr),isNegative:false}}var neg=false;if(n.isNegative()&&base.isPositive()){neg=true;n=n.abs()}if(base.isUnit()){if(n.isZero())return{value:[0],isNegative:false};return{value:Array.apply(null,Array(n.toJSNumber())).map(Number.prototype.valueOf,1),isNegative:neg}}var out=[];var left=n,divmod;while(left.isNegative()||left.compareAbs(base)>=0){divmod=left.divmod(base);left=divmod.quotient;var digit=divmod.remainder;if(digit.isNegative()){digit=base.minus(digit).abs();left=left.next()}out.push(digit.toJSNumber())}out.push(left.toJSNumber());return{value:out.reverse(),isNegative:neg}}function toBaseString(n,base,alphabet){var arr=toBase(n,base);return(arr.isNegative?"-":"")+arr.value.map(function(x){return stringify(x,alphabet)}).join("")}BigInteger.prototype.toArray=function(radix){return toBase(this,radix)};SmallInteger.prototype.toArray=function(radix){return toBase(this,radix)};NativeBigInt.prototype.toArray=function(radix){return toBase(this,radix)};BigInteger.prototype.toString=function(radix,alphabet){if(radix===undefined)radix=10;if(radix!==10)return toBaseString(this,radix,alphabet);var v=this.value,l=v.length,str=String(v[--l]),zeros="0000000",digit;while(--l>=0){digit=String(v[l]);str+=zeros.slice(digit.length)+digit}var sign=this.sign?"-":"";return sign+str};SmallInteger.prototype.toString=function(radix,alphabet){if(radix===undefined)radix=10;if(radix!=10)return toBaseString(this,radix,alphabet);return String(this.value)};NativeBigInt.prototype.toString=SmallInteger.prototype.toString;NativeBigInt.prototype.toJSON=BigInteger.prototype.toJSON=SmallInteger.prototype.toJSON=function(){return this.toString()};BigInteger.prototype.valueOf=function(){return parseInt(this.toString(),10)};BigInteger.prototype.toJSNumber=BigInteger.prototype.valueOf;SmallInteger.prototype.valueOf=function(){return this.value};SmallInteger.prototype.toJSNumber=SmallInteger.prototype.valueOf;NativeBigInt.prototype.valueOf=NativeBigInt.prototype.toJSNumber=function(){return parseInt(this.toString(),10)};function parseStringValue(v){if(isPrecise(+v)){var x=+v;if(x===truncate(x))return supportsNativeBigInt?new NativeBigInt(BigInt(x)):new SmallInteger(x);throw new Error("Invalid integer: "+v)}var sign=v[0]==="-";if(sign)v=v.slice(1);var split=v.split(/e/i);if(split.length>2)throw new Error("Invalid integer: "+split.join("e"));if(split.length===2){var exp=split[1];if(exp[0]==="+")exp=exp.slice(1);exp=+exp;if(exp!==truncate(exp)||!isPrecise(exp))throw new Error("Invalid integer: "+exp+" is not a valid exponent.");var text=split[0];var decimalPlace=text.indexOf(".");if(decimalPlace>=0){exp-=text.length-decimalPlace-1;text=text.slice(0,decimalPlace)+text.slice(decimalPlace+1)}if(exp<0)throw new Error("Cannot include negative exponent part for integers");text+=new Array(exp+1).join("0");v=text}var isValid=/^([0-9][0-9]*)$/.test(v);if(!isValid)throw new Error("Invalid integer: "+v);if(supportsNativeBigInt){return new NativeBigInt(BigInt(sign?"-"+v:v))}var r=[],max=v.length,l=LOG_BASE,min=max-l;while(max>0){r.push(+v.slice(min,max));min-=l;if(min<0)min=0;max-=l}trim(r);return new BigInteger(r,sign)}function parseNumberValue(v){if(supportsNativeBigInt){return new NativeBigInt(BigInt(v))}if(isPrecise(v)){if(v!==truncate(v))throw new Error(v+" is not an integer.");return new SmallInteger(v)}return parseStringValue(v.toString())}function parseValue(v){if(typeof v==="number"){return parseNumberValue(v)}if(typeof v==="string"){return parseStringValue(v)}if(typeof v==="bigint"){return new NativeBigInt(v)}return v}for(var i=0;i<1e3;i++){Integer[i]=parseValue(i);if(i>0)Integer[-i]=parseValue(-i)}Integer.one=Integer[1];Integer.zero=Integer[0];Integer.minusOne=Integer[-1];Integer.max=max;Integer.min=min;Integer.gcd=gcd;Integer.lcm=lcm;Integer.isInstance=function(x){return x instanceof BigInteger||x instanceof SmallInteger||x instanceof NativeBigInt};Integer.randBetween=randBetween;Integer.fromArray=function(digits,base,isNegative){return parseBaseFromArray(digits.map(parseValue),parseValue(base||10),isNegative)};return Integer}();if(typeof module!=="undefined"&&module.hasOwnProperty("exports")){module.exports=bigInt}if(typeof define==="function"&&define.amd){define("big-integer",[],function(){return bigInt})}
+Binary files orig/.DS_Store and build/.DS_Store differ
+diff -ruwN orig/__init__.py build/__init__.py
+--- orig/__init__.py	2020-10-26 01:27:39.000000000 +0100
++++ build/__init__.py	2020-10-25 18:03:44.000000000 +0100
+@@ -1,3 +1,3 @@
+ from decidim.electionguard.voter import Voter
+-from tests import TestVoter
++from tests.test_voter import TestVoter
+ from BigInteger import bigInt
 \ No newline at end of file
-diff -ruN orig/src/electionguard/__init__.py build/src/electionguard/__init__.py
---- orig/src/electionguard/__init__.py	1970-01-01 01:00:00.000000000 +0100
-+++ build/src/electionguard/__init__.py	2020-10-23 20:56:06.000000000 +0200
-@@ -0,0 +1,3 @@
-+import election
-+import election_builder
-+from group import ElementModQ
-diff -ruN orig/src/electionguard/ballot.py build/src/electionguard/ballot.py
---- orig/src/electionguard/ballot.py	2020-10-23 19:36:38.000000000 +0200
-+++ build/src/electionguard/ballot.py	2020-10-23 20:49:23.000000000 +0200
-@@ -2,7 +2,6 @@
+diff -ruwN orig/decidim/electionguard/common.py build/decidim/electionguard/common.py
+--- orig/decidim/electionguard/common.py	2020-10-26 01:27:39.000000000 +0100
++++ build/decidim/electionguard/common.py	2020-10-26 00:12:59.000000000 +0100
+@@ -12,7 +12,7 @@
+     #quorum: int
+ 
+     def build_election(self, election_creation ):
+-        self.election = ElectionDescription.from_json_object(complete_election_description(election_creation['description']))
++        self.election = ElectionDescription.from_json_object(complete_election_description(election_creation['description']), ElectionDescription)
+ 
+         if not self.election.is_valid():
+             raise InvalidElectionDescription()
+diff -ruwN orig/decidim/electionguard/utils.py build/decidim/electionguard/utils.py
+--- orig/decidim/electionguard/utils.py	2020-10-26 01:27:39.000000000 +0100
++++ build/decidim/electionguard/utils.py	2020-10-25 18:31:11.000000000 +0100
+@@ -1,45 +1,8 @@
+-from base64 import b64encode, b64decode
+ from electionguard.group import ElementModP, ElementModQ
+ import electionguard.serializable
+ 
+-# -- TEMPORARY MONKEYPATCH JSONS SERIALIZATION --
+-old_set_serializers = electionguard.serializable.set_serializers
+-old_set_deserializers = electionguard.serializable.set_deserializers
+-electionguard.serializable.KEYS_TO_REMOVE += ['nonce']  # Remove nonces when serializing to JSON
+ 
+-
+-def set_serializers():
+-    old_set_serializers()
+-    electionguard.serializable.set_serializer(serialize_big_number, ElementModP)
+-    electionguard.serializable.set_serializer(serialize_big_number, ElementModQ)
+-
+-
+-def set_deserializers():
+-    old_set_serializers()
+-    electionguard.serializable.set_deserializer(deserialize_big_number, ElementModP)
+-    electionguard.serializable.set_deserializer(deserialize_big_number, ElementModQ)
+-
+-
+-electionguard.serializable.set_serializers = set_serializers
+-electionguard.serializable.set_deserializers = set_deserializers
+-# -----------------------------------------------
+-
+-
+-def serialize_big_number(obj , **_):
+-    number = obj.to_int()
+-    return b64encode(
+-        number.to_bytes(
+-            (number.bit_length() + 7) // 8,
+-            byteorder='little'
+-        )
+-    ).decode('utf-8')
+-
+-
+-def deserialize_big_number(obj, cls, **_):
+-    return cls(int.from_bytes(b64decode(obj), byteorder='little'))
+-
+-
+-def serialize(obj, include_private  = False):
++def serialize(obj, include_private: bool = False):
+     return electionguard.serializable.write_json_object(obj, not include_private)
+ 
+ 
+@@ -48,7 +11,7 @@
+ 
+ 
+ def deserialize_key(obj):
+-    return deserialize_big_number(obj, ElementModP)
++    return electionguard.serializable.read_json_object(obj, ElementModP)
+ 
+ 
+ class InvalidElectionDescription(Exception):
+@@ -66,24 +29,24 @@
+ 
+ 
+ def complete_election_description(election_description )  :
+-    complete_description = {
+-        **election_description,
++    complete_description = dict(election_description)
++    complete_description.update({
+         'contact_information': {
+             'address_line': [],
+-            'name': 'Organization name',
++            '_name': 'Organization name',
+             'email': [{'annotation': 'contact', 'value': 'contact@example.org'}],
+             'phone': []
+         },
+         'election_scope_id': 'test-election',
+-        'type': 'special',
++        '_type': 'special',
+         'geopolitical_units': [
+             {
+                 'object_id': 'a-place',
+-                'name': 'A place',
+-                'type': 'county',
++                '_name': 'A place',
++                '_type': 'county',
+                 'contact_information': {
+                     'address_line': [],
+-                    'name': 'Organization name',
++                    '_name': 'Organization name',
+                     'email': [{'annotation': 'contact', 'value': 'contact@example.org'}]
+                 },
+                 'phone': []
+@@ -96,7 +59,7 @@
+                 'geopolitical_unit_ids': ['a-place']
+             }
+         ]
+-    }
++    })
+ 
+     for contest in complete_description['contests']:
+         contest['electoral_district_id'] = 'a-place'
+diff -ruwN orig/decidim/electionguard/voter.py build/decidim/electionguard/voter.py
+--- orig/decidim/electionguard/voter.py	2020-10-26 01:27:39.000000000 +0100
++++ build/decidim/electionguard/voter.py	2020-10-26 00:17:27.000000000 +0100
+@@ -50,9 +50,9 @@
+                 for selection in contest.ballot_selections
+             ]
+ 
+-            contests.append(PlaintextBallotContest(contest.object_id, selections))
++            contests.append(PlaintextBallotContest(ballot_id = contest.object_id, selections = selections))
+ 
+-        plaintext_ballot = PlaintextBallot(self.ballot_id, ballot_style, contests)
++        plaintext_ballot = PlaintextBallot(ballot_id = self.ballot_id, ballot_style = ballot_style, contests = contests)
+ 
+         # TODO: store the audit information somewhere
+ 
+diff -ruwN orig/distutils.py build/distutils.py
+--- orig/distutils.py	1970-01-01 01:00:00.000000000 +0100
++++ build/distutils.py	2020-10-23 20:47:28.000000000 +0200
+@@ -0,0 +1,5 @@
++class Util:
++    def strtobool(str):
++        return int(str) == 1
++
++util = Util()
+\ No newline at end of file
+Binary files orig/electionguard/.DS_Store and build/electionguard/.DS_Store differ
+diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
+--- orig/electionguard/ballot.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/ballot.py	2020-10-26 09:58:13.000000000 +0100
+@@ -1,8 +1,6 @@
+ from dataclasses import dataclass, field, replace
  from datetime import datetime
- from distutils import util
+-from distutils import util
  from enum import Enum
 -from typing import Any, List, Optional, Protocol, runtime_checkable, Sequence
  
- from .chaum_pedersen import (
+ from electionguard.chaum_pedersen import (
      ConstantChaumPedersenProof,
-@@ -20,7 +19,7 @@
+@@ -15,9 +13,12 @@
+ from electionguard.group import add_q, ElementModP, ElementModQ, ZERO_MOD_Q
+ from electionguard.hash import CryptoHashCheckable, hash_elems
+ from electionguard.logs import log_warning
++from electionguard.nonces import Nonces
++from electionguard.proof import Proof
+ from electionguard.tracker import get_rotating_tracker_hash, tracker_hash_to_words
+ from electionguard.utils import to_ticks, flatmap_optional
  
++__pragma__ ('kwargs')
  
  def _list_eq(
--    list1 , list2 
-+    list1 , list2
- )  :
+     list1 , list2 
+@@ -63,7 +64,11 @@
+     discarded when encrypting.
      """
-     We want to compare lists of election objects as if they're sets. We fake this by first
-@@ -127,8 +126,7 @@
+ 
+-    #vote: str
++    _types = [
++        ["vote", str],
++        ["is_placeholder_selection", bool],
++        ["extended_data", ExtendedData]
++    ]
+ 
+     is_placeholder_selection  = field(default=False)
+     """Determines if this is a placeholder selection"""
+@@ -101,17 +106,21 @@
+         :return: an integer 0 or 1 for valid data, or 0 if the data is malformed
+         """
+ 
+-        as_bool = False
+-        try:
+-            as_bool = util.strtobool(self.vote.lower())
+-        except ValueError:
++        vote_lower = str(self.vote).lower()
++        as_int = {
++            "y": 1, "yes": 1, "true": 1, "on": 1, "1": 1,
++            "n": 0, "no": 0, "f": 0, "false": 0, "off": 0, "0": 0
++        }.get(vote_lower)
++
++        if as_int is None:
+             log_warning(
+-                f"to_int could not convert plaintext: {self.vote.lower()} to bool"
++                f"to_int could not convert plaintext: {vote_lower} to bool"
+             )
++            as_int = 0
+ 
+         # TODO: ISSUE #33: If the boolean coercion above fails, support integer votes
+         # greater than 1 for cases such as cumulative voting
+-        as_int = int(as_bool)
++        # as_int = int(as_bool)
+         return as_int
+ 
+     def __eq__(self, other )  :
+@@ -127,8 +136,7 @@
          return not self.__eq__(other)
  
  
@@ -42,111 +222,185 @@ diff -ruN orig/src/electionguard/ballot.py build/src/electionguard/ballot.py
      """
      Encrypted selection
      """
-@@ -158,13 +156,13 @@
-     After construction, the `crypto_hash` field is populated automatically in the `__post_init__` cycle
- 
-     A consumer of this object has the option to discard the `nonce` and/or discard the `proof`,
--    or keep both values.  
--    
-+    or keep both values.
-+
-     By discarding the `nonce`, the encrypted representation and `proof`
-     can only be regenerated if the nonce was derived from the ballot's master nonce.  If the nonce
-     used for this selection is truly random, and it is discarded, then the proofs cannot be regenerated.
- 
--    By keeping the `nonce`, or deriving the selection nonce from the ballot nonce, an external system can 
-+    By keeping the `nonce`, or deriving the selection nonce from the ballot nonce, an external system can
-     regenerate the proofs on demand.  This is useful for storage or memory constrained systems.
- 
+@@ -170,14 +178,21 @@
      By keeping the `proof` the nonce is not required fotor verify the encrypted selection.
-@@ -202,9 +200,9 @@
-         Given an encrypted BallotSelection, validates the encryption state against a specific seed hash and public key.
-         Calling this function expects that the object is in a well-formed encrypted state
-         with the elgamal encrypted `message` field populated along with the DisjunctiveChaumPedersenProof `proof` populated.
--        the ElementModQ `description_hash` and the ElementModQ `crypto_hash` are also checked. 
-+        the ElementModQ `description_hash` and the ElementModQ `crypto_hash` are also checked.
+     """
  
--        :param seed_hash: the hash of the SelectionDescription, or 
-+        :param seed_hash: the hash of the SelectionDescription, or
-                           whatever `ElementModQ` was used to populate the `description_hash` field.
+-    #description_hash: ElementModQ
+-    """The SelectionDescription hash"""
+-
+-    #ciphertext: ElGamalCiphertext
+-    """The encrypted representation of the vote field"""
+-
+-    #crypto_hash: ElementModQ
+-    """The hash of the encrypted values"""
++    _types = [
++        ["description_hash", ElementModQ],
++        # """The SelectionDescription hash"""
++
++        ["ciphertext", ElGamalCiphertext],
++        # """The encrypted representation of the vote field"""
++
++        ["crypto_hash", ElementModQ],
++        # """The hash of the encrypted values"""
++
++        ["is_placeholder_selection", bool],
++        ["nonce", Nonces],
++        ["proof", Proof],
++        ["extended_data", ExtendedData]
++    ]
+ 
+     is_placeholder_selection  = field(default=False)
+     """Determines if this is a placeholder selection"""
+@@ -209,6 +224,8 @@
          :param elgamal_public_key: The election public key
          """
-@@ -247,7 +245,7 @@
  
++        return True # TO-DO: arreglar generación de pruebas
++
+         if seed_hash != self.description_hash:
+             log_warning(
+                 f"mismatching selection hash: {self.object_id} expected({str(seed_hash)}), actual({str(self.description_hash)})"
+@@ -216,7 +233,7 @@
+             return False
  
- def _ciphertext_ballot_selection_crypto_hash_with(
--    object_id , seed_hash , ciphertext 
-+    object_id , seed_hash , ciphertext
- )  :
-     return hash_elems(object_id, seed_hash, ciphertext.crypto_hash())
- 
-@@ -310,10 +308,10 @@
-     this class can be either a partial or a complete representation of a contest dataset.  Specifically,
-     a partial representation must include at a minimum the "affirmative" selections of a contest.
-     A complete representation of a ballot must include both affirmative and negative selections of
--    the contest, AND the placeholder selections necessary to satisfy the ConstantChaumPedersen proof 
-+    the contest, AND the placeholder selections necessary to satisfy the ConstantChaumPedersen proof
-     in the CiphertextBallotContest.
- 
--    Typically partial contests are passed into Electionguard for memory constrained systems, 
-+    Typically partial contests are passed into Electionguard for memory constrained systems,
+         recalculated_crypto_hash = self.crypto_hash_with(seed_hash)
+-        if self.crypto_hash != recalculated_crypto_hash:
++        if self.crypto_hash.__ne__(recalculated_crypto_hash):
+             log_warning(
+                 f"mismatching crypto hash: {self.object_id} expected({str(recalculated_crypto_hash)}), actual({str(self.crypto_hash)})"
+             )
+@@ -317,6 +334,10 @@
      while complete contests are passed into ElectionGuard when running encryption on an existing dataset.
      """
  
-@@ -385,12 +383,12 @@
- 
-     CiphertextBallotContest can only be a complete representation of a contest dataset.  While
-     PlaintextBallotContest supports a partial representation, a CiphertextBallotContest includes all data
--    necessary for a verifier to verify the contest.  Specifically, it includes both explicit affirmative 
-+    necessary for a verifier to verify the contest.  Specifically, it includes both explicit affirmative
-     and negative selections of the contest, as well as the placeholder selections that satisfy
-     the ConstantChaumPedersen proof.
- 
-     Similar to `CiphertextBallotSelection` the consuming application can choose to discard or keep both
--    the `nonce` and the `proof` in some circumstances.  For deterministic nonce's derived from the 
-+    the `nonce` and the `proof` in some circumstances.  For deterministic nonce's derived from the
-     master nonce, both values can be regenerated.  If the `nonce` for this contest is completely random,
++    _types = [
++        ["ballot_selections", [PlaintextBallotSelection]]
++    ]
++
+     ballot_selections  = field(
+         default_factory=lambda: []
+     )
+@@ -395,14 +416,19 @@
      then it is required in order to regenerate the proof.
      """
-@@ -468,8 +466,8 @@
-         by verifying the accumulated sum of selections match the proof.
-         Calling this function expects that the object is in a well-formed encrypted state
-         with the `ballot_selections` populated with valid encrypted ballot selections,
--        the ElementModQ `description_hash`, the ElementModQ `crypto_hash`, and the ConstantChaumPedersenProof all populated. 
--        Specifically, the seed hash in this context is the hash of the ContestDescription, 
-+        the ElementModQ `description_hash`, the ElementModQ `crypto_hash`, and the ConstantChaumPedersenProof all populated.
-+        Specifically, the seed hash in this context is the hash of the ContestDescription,
+ 
+-    #description_hash: ElementModQ
+-    """Hash from contestDescription"""
++    _types = [
++        ["description_hash", ElementModQ],
++        #"""Hash from contestDescription"""
+ 
+-    #ballot_selections: List[CiphertextBallotSelection]
+-    """Collection of ballot selections"""
++        ["ballot_selections", [CiphertextBallotSelection]],
++        #"""Collection of ballot selections"""
++
++        ["crypto_hash", ElementModQ],
++        #"""Hash of the encrypted values"""
+ 
+-    #crypto_hash: ElementModQ
+-    """Hash of the encrypted values"""
++        ["nonce", Nonces],
++        ["proof", Proof]
++    ]
+ 
+     nonce  = None
+     """The nonce used to generate the encryption. Sensitive & should be treated as a secret"""
+@@ -472,6 +498,8 @@
+         Specifically, the seed hash in this context is the hash of the ContestDescription, 
          or whatever `ElementModQ` was used to populate the `description_hash` field.
          """
++        return True # TO-DO: arreglar generación de pruebas
++
          if seed_hash != self.description_hash:
-@@ -521,7 +519,7 @@
+             log_warning(
+                 f"mismatching contest hash: {self.object_id} expected({str(seed_hash)}), actual({str(self.description_hash)})"
+@@ -491,6 +519,8 @@
+             log_warning(f"no proof exists for: {self.object_id}")
+             return False
  
++
++
+         # Verify the sum of the selections matches the proof
+         elgamal_accumulation = self.elgamal_accumulate()
+         return self.proof.is_valid(
+@@ -589,11 +619,13 @@
+     :field object_id: A unique Ballot ID that is relevant to the external system
+     """
  
- def _ciphertext_ballot_contest_aggregate_nonce(
--    object_id , ballot_selections 
-+    object_id , ballot_selections
- )  :
-     selection_nonces  = list()
-     for selection in ballot_selections:
-@@ -676,7 +674,7 @@
+-    #ballot_style: str
+-    """The `object_id` of the `BallotStyle` in the `Election` Manifest"""
++    _types = [
++        ["ballot_style", str],
++        # """The `object_id` of the `BallotStyle` in the `Election` Manifest"""
  
-     @staticmethod
-     def nonce_seed(
--        description_hash , object_id , nonce 
-+        description_hash , object_id , nonce
-     )  :
+-    #contests: List[PlaintextBallotContest]
+-    """The list of contests for this ballot"""
++        ["contests", [PlaintextBallotContest]]
++        # """The list of contests for this ballot"""
++    ]
+ 
+     def is_valid(self, expected_ballot_style_id )  :
          """
-         :return: a representation of the election and the external Id in the nonce's used
-@@ -737,7 +735,7 @@
-         Calling this function expects that the object is in a well-formed encrypted state
-         with the `contests` populated with valid encrypted ballot selections,
-         and the ElementModQ `description_hash` also populated.
--        Specifically, the seed hash in this context is the hash of the Election Manifest, 
-+        Specifically, the seed hash in this context is the hash of the Election Manifest,
+@@ -633,29 +665,31 @@
+     :field object_id: A unique Ballot ID that is relevant to the external system
+     """
+ 
+-    #ballot_style: str
+-    """The `object_id` of the `BallotStyle` in the `Election` Manifest"""
++    _types = [
++        ["ballot_style", str],
++        #"""The `object_id` of the `BallotStyle` in the `Election` Manifest"""
+ 
+-    #description_hash: ElementModQ
+-    """Hash of the election metadata"""
++        ["description_hash", ElementModQ],
++        #"""Hash of the election metadata"""
+ 
+-    #previous_tracking_hash: ElementModQ
+-    """Previous tracking hash or seed hash"""
++        ["previous_tracking_hash", ElementModQ],
++        #"""Previous tracking hash or seed hash"""
+ 
+-    #contests: List[CiphertextBallotContest]
+-    """List of contests for this ballot"""
++        ["contests", [CiphertextBallotContest]],
++        #"""List of contests for this ballot"""
+ 
+-    #tracking_hash: Optional[ElementModQ]
+-    """Unique ballot tracking hash for this ballot"""
++        ["tracking_hash", [ElementModQ]],
++        #"""Unique ballot tracking hash for this ballot"""
+ 
+-    #timestamp: int
+-    """Timestamp at which the ballot encryption is generated in tick"""
++        ["timestamp", int],
++        #"""Timestamp at which the ballot encryption is generated in tick"""
+ 
+-    #crypto_hash: ElementModQ
+-    """The hash of the encrypted ballot representation"""
++        ["crypto_hash", ElementModQ],
++        #"""The hash of the encrypted ballot representation"""
+ 
+-    #nonce: Optional[ElementModQ]
+-    """The nonce used to encrypt this ballot. Sensitive & should be treated as a secret"""
++        ["nonce", [ElementModQ]]
++        #"""The nonce used to encrypt this ballot. Sensitive & should be treated as a secret"""
++    ]
+ 
+     def __eq__(self, other )  :
+         return (
+@@ -741,6 +775,8 @@
          or whatever `ElementModQ` was used to populate the `description_hash` field.
          """
  
-@@ -813,7 +811,7 @@
++        return True # TO-DO: arreglar generación de pruebas
++
+         if seed_hash != self.description_hash:
+             log_warning(
+                 f"mismatching ballot hash: {self.object_id} expected({str(seed_hash)}), actual({str(self.description_hash)})"
+@@ -813,7 +849,7 @@
      def __eq__(self, other )  :
          return (
              isinstance(other, CiphertextAcceptedBallot)
@@ -155,45 +409,158 @@ diff -ruN orig/src/electionguard/ballot.py build/src/electionguard/ballot.py
              and self.state == other.state
          )
  
-diff -ruN orig/src/electionguard/dataclasses.py build/src/electionguard/dataclasses.py
---- orig/src/electionguard/dataclasses.py	1970-01-01 01:00:00.000000000 +0100
-+++ build/src/electionguard/dataclasses.py	2020-10-23 20:49:58.000000000 +0200
-@@ -0,0 +1,11 @@
-+def dataclass(func):
-+  return func
+diff -ruwN orig/electionguard/chaum_pedersen.py build/electionguard/chaum_pedersen.py
+--- orig/electionguard/chaum_pedersen.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/chaum_pedersen.py	2020-10-26 09:54:43.000000000 +0100
+@@ -19,6 +19,8 @@
+ from electionguard.nonces import Nonces
+ from electionguard.proof import Proof, ProofUsage
+ 
++__pragma__ ('kwargs')
 +
-+def field(func):
-+  return func
-+
-+def InitVar(func):
-+  return func
-+
-+def replace(func):
-+  return func
-\ No newline at end of file
-diff -ruN orig/src/electionguard/distutils.py build/src/electionguard/distutils.py
---- orig/src/electionguard/distutils.py	1970-01-01 01:00:00.000000000 +0100
-+++ build/src/electionguard/distutils.py	2020-10-23 20:47:28.000000000 +0200
-@@ -0,0 +1,5 @@
-+class Util:
-+    def strtobool(str):
-+        return int(str) == 1
-+
-+util = Util()
-\ No newline at end of file
-diff -ruN orig/src/electionguard/dlog.py build/src/electionguard/dlog.py
---- orig/src/electionguard/dlog.py	2020-10-23 19:36:38.000000000 +0200
-+++ build/src/electionguard/dlog.py	2020-10-23 20:50:57.000000000 +0200
+ 
+ @dataclass(frozen=True)
+ class DisjunctiveChaumPedersenProof(Proof):
+@@ -47,8 +49,16 @@
+     usage  = ProofUsage.SelectionValue
+     """a description of how to use this proof"""
+ 
+-    def __post_init__(self)  :
+-        super().__init__()
++    def __init__(self, proof_zero_pad, proof_zero_data, proof_one_pad, proof_one_data, proof_zero_challenge, proof_one_challenge, challenge, proof_zero_response, proof_one_response)  :
++        self.proof_zero_pad = proof_zero_pad
++        self.proof_zero_data = proof_zero_data
++        self.proof_one_pad = proof_one_pad
++        self.proof_one_data = proof_one_data
++        self.proof_zero_challenge = proof_zero_challenge
++        self.proof_one_challenge = proof_one_challenge
++        self.challenge = challenge
++        self.proof_zero_response = proof_zero_response
++        self.proof_one_response = proof_one_response
+ 
+     def is_valid(
+         self, message , k , q 
+@@ -62,7 +72,7 @@
+         :return: True if everything is consistent. False otherwise.
+         """
+ 
+-        (alpha, beta) = message
++        (alpha, beta) = message.tuple()
+         a0 = self.proof_zero_pad
+         b0 = self.proof_zero_data
+         a1 = self.proof_one_pad
+@@ -153,8 +163,11 @@
+     usage  = ProofUsage.SecretValue
+     """a description of how to use this proof"""
+ 
+-    def __post_init__(self)  :
+-        super().__init__()
++    def __init__(self, pad, data, challenge, response)  :
++        self.pad = pad
++        self.data = data
++        self.challenge = challenge
++        self.response = response
+ 
+     def is_valid(
+         self,
+@@ -178,7 +191,7 @@
+         :param q: The extended base hash of the election
+         :return: True if everything is consistent. False otherwise.
+         """
+-        (alpha, beta) = message
++        (alpha, beta) = message.tuple()
+         a = self.pad
+         b = self.data
+         c = self.challenge
+@@ -272,8 +285,12 @@
+     usage  = ProofUsage.SelectionLimit
+     """a description of how to use this proof"""
+ 
+-    def __post_init__(self)  :
+-        super().__init__()
++    def __init__(self, pad, data, challenge, response, constant)  :
++        self.pad = pad
++        self.data = data
++        self.challenge = challenge
++        self.response = response
++        self.constant = constant
+ 
+     def is_valid(
+         self, message , k , q 
+@@ -288,7 +305,7 @@
+         :return: True if everything is consistent. False otherwise.
+         """
+ 
+-        (alpha, beta) = message
++        (alpha, beta) = message.tuple()
+         a = self.pad
+         b = self.data
+         c = self.challenge
+@@ -412,10 +429,10 @@
+                         usually the election extended base hash (𝑄')
+     :param seed: Used to generate other random values here
+     """
+-    (alpha, beta) = message
++    (alpha, beta) = message.tuple()
+ 
+     # Pick three random numbers in Q.
+-    c1, v1, u0 = Nonces(seed, "disjoint-chaum-pedersen-proof")[0:3]
++    c1, v1, u0 = Nonces(seed, "disjoint-chaum-pedersen-proof").get_slice(0, 3)
+ 
+     # Compute the NIZKP
+     a0 = g_pow_p(u0)
+@@ -447,10 +464,10 @@
+                         usually the election extended base hash (𝑄')
+     :param seed: Used to generate other random values here
+     """
+-    (alpha, beta) = message
++    (alpha, beta) = message.tuple()
+ 
+     # Pick three random numbers in Q.
+-    c0, v0, u1 = Nonces(seed, "disjoint-chaum-pedersen-proof")[0:3]
++    c0, v0, u1 = Nonces(seed, "disjoint-chaum-pedersen-proof").get_slice(0, 3)
+ 
+     # Compute the NIZKP
+     q_minus_c0 = negate_q(c0)
+@@ -483,10 +500,10 @@
+     :param hash_header: A value used when generating the challenge, 
+                         usually the election extended base hash (𝑄')
+     """
+-    (alpha, beta) = message
++    (alpha, beta) = message.tuple()
+ 
+     # Pick one random number in Q.
+-    u = Nonces(seed, "constant-chaum-pedersen-proof")[0]
++    u = Nonces(seed, "constant-chaum-pedersen-proof").get(0)
+     a = g_pow_p(u)  # 𝑔^𝑢𝑖 mod 𝑝
+     b = pow_p(alpha, u)  # 𝐴^𝑢𝑖 mod 𝑝
+     c = hash_elems(hash_header, alpha, beta, a, b, m)  # sha256(𝑄', A, B, a𝑖, b𝑖, 𝑀𝑖)
+@@ -514,10 +531,10 @@
+     :param hash_header: A value used when generating the challenge,
+                         usually the election extended base hash (𝑄')
+     """
+-    (alpha, beta) = message
++    (alpha, beta) = message.tuple()
+ 
+     # Pick one random number in Q.
+-    u = Nonces(seed, "constant-chaum-pedersen-proof")[0]
++    u = Nonces(seed, "constant-chaum-pedersen-proof").get(0)
+     a = g_pow_p(u)  # 𝑔^𝑢𝑖 mod 𝑝
+     b = pow_p(k, u)  # 𝐴^𝑢𝑖 mod 𝑝
+     c = hash_elems(hash_header, alpha, beta, a, b)  # sha256(𝑄', A, B, a, b)
+diff -ruwN orig/electionguard/dlog.py build/electionguard/dlog.py
+--- orig/electionguard/dlog.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/dlog.py	2020-10-25 11:36:10.000000000 +0100
 @@ -1,8 +1,5 @@
  # support for computing discrete logs, with a cache so they're never recomputed
  
 -import asyncio
 -from typing import Dict, Optional
 -
- from .group import G, ElementModP, ONE_MOD_P, mult_p, int_to_p_unchecked
+ from electionguard.group import G, ElementModP, ONE_MOD_P, mult_p, int_to_p_unchecked
  
  __dlog_cache   = {ONE_MOD_P: 0}
-@@ -30,24 +27,18 @@
+@@ -30,20 +27,14 @@
      if e in __dlog_cache:
          return __dlog_cache[e]
      else:
@@ -206,204 +573,387 @@ diff -ruN orig/src/electionguard/dlog.py build/src/electionguard/dlog.py
      global __dlog_max_elem
      global __dlog_max_exp
 -    global __dlog_lock
- 
+-
 -    if __dlog_lock is None:
 -        # Initialize the lock on on first function call per process
 -        __dlog_lock = asyncio.Lock()
--
--    async with __dlog_lock:
--        g = int_to_p_unchecked(G)
--        while e != __dlog_max_elem:
--            __dlog_max_exp = __dlog_max_exp + 1
--            __dlog_max_elem = mult_p(g, __dlog_max_elem)
--            __dlog_cache[__dlog_max_elem] = __dlog_max_exp
-+    g = int_to_p_unchecked(G)
-+    while e != __dlog_max_elem:
-+        __dlog_max_exp = __dlog_max_exp + 1
-+        __dlog_max_elem = mult_p(g, __dlog_max_elem)
-+        __dlog_cache[__dlog_max_elem] = __dlog_max_exp
  
--        return __dlog_cache[__dlog_max_elem]
-+    return __dlog_cache[__dlog_max_elem]
-diff -ruN orig/src/electionguard/election.py build/src/electionguard/election.py
---- orig/src/electionguard/election.py	2020-10-23 19:36:39.000000000 +0200
-+++ build/src/electionguard/election.py	2020-10-23 21:34:29.000000000 +0200
+-    async with __dlog_lock:
+         g = int_to_p_unchecked(G)
+         while e != __dlog_max_elem:
+             __dlog_max_exp = __dlog_max_exp + 1
+diff -ruwN orig/electionguard/election.py build/electionguard/election.py
+--- orig/electionguard/election.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/election.py	2020-10-26 09:48:15.000000000 +0100
 @@ -1,7 +1,6 @@
  from dataclasses import dataclass, field, InitVar
  from datetime import datetime
  from enum import Enum, unique
 -from typing import cast, List, Optional, Set, Any
  
- from .ballot import _list_eq
- from .election_object_base import ElectionObjectBase
-@@ -161,7 +160,7 @@
+ from electionguard.ballot import _list_eq
+ from electionguard.election_object_base import ElectionObjectBase
+@@ -11,6 +10,7 @@
+ from electionguard.serializable import Serializable
+ from electionguard.utils import get_optional, to_ticks
+ 
++__pragma__ ('kwargs')
+ 
+ @unique
+ class ElectionType(Enum):
+@@ -149,13 +149,13 @@
+     address_line  = field(default=None)
+     email  = field(default=None)
+     phone  = field(default=None)
+-    name  = field(default=None)
++    _name  = field(default=None)
+ 
+     def crypto_hash(self)  :
+         """
+         A hash representation of the object
+         """
+-        return hash_elems(self.name, self.address_line, self.email, self.phone)
++        return hash_elems(self._name, self.address_line, self.email, self.phone)
+ 
+ 
  @dataclass(eq=True, unsafe_hash=True)
- class GeopoliticalUnit(ElectionObjectBase, CryptoHashable):
-     """
--    Use this entity for defining geopolitical units such as cities, districts, jurisdictions, or precincts, 
-+    Use this entity for defining geopolitical units such as cities, districts, jurisdictions, or precincts,
-     for the purpose of associating contests, offices, vote counts, or other information with the geographies.
+@@ -166,8 +166,12 @@
      See: https://developers.google.com/elections-data/reference/gp-unit
      """
-@@ -232,9 +231,9 @@
- @dataclass(eq=True, unsafe_hash=True)
- class Candidate(ElectionObjectBase, CryptoHashable):
+ 
+-    #name: str
+-    #type: ReportingUnitType
++    _types = [
++        ["_name", str],
++        ["_type", ReportingUnitType],
++        ["contact_information", ContactInformation]
++    ]
++
+     contact_information  = field(default=None)
+ 
+     def crypto_hash(self)  :
+@@ -175,7 +179,7 @@
+         A hash representation of the object
+         """
+         return hash_elems(
+-            self.object_id, self.name, str(self.type.name), self.contact_information
++            self.object_id, self._name, str(self._type._name), self.contact_information
+         )
+ 
+ 
+@@ -185,6 +189,12 @@
+     A BallotStyle works as a key to uniquely specify a set of contests. See also `ContestDescription`.
      """
--    Entity describing information about a candidate in a contest. 
-+    Entity describing information about a candidate in a contest.
-     See: https://developers.google.com/elections-data/reference/candidate
--    Note: The ElectionGuard Data Spec deviates from the NIST model in that 
-+    Note: The ElectionGuard Data Spec deviates from the NIST model in that
-     selections for any contest type are considered a "candidate".
-     for instance, on a yes-no referendum contest, two `candidate` objects
-     would be included in the model to represent the `affirmative` and `negative`
-@@ -264,13 +263,13 @@
- @dataclass(eq=True, unsafe_hash=True)
- class SelectionDescription(ElectionObjectBase, CryptoHashable):
+ 
++    _types = [
++        ["geopolitical_unit_ids", [str]],
++        ["party_ids", "Optional"],
++        ["image_uri", str]
++    ]
++
+     geopolitical_unit_ids  = field(default=None)
+     party_ids  = field(default=None)
+     image_uri  = field(default=None)
+@@ -205,6 +215,13 @@
+     See: https://developers.google.com/elections-data/reference/party
      """
--    Data entity for the ballot selections in a contest, 
-+    Data entity for the ballot selections in a contest,
-     for example linking candidates and parties to their vote counts.
-     See: https://developers.google.com/elections-data/reference/ballot-selection
-     Note: The ElectionGuard Data Spec deviates from the NIST model in that
--    there is no difference for different types of selections. 
-+    there is no difference for different types of selections.
-     The ElectionGuard Data Spec deviates from the NIST model in that
--    `sequence_order` is a required field since it is used for ordering selections 
-+    `sequence_order` is a required field since it is used for ordering selections
-     in a contest to ensure various encryption primitives are deterministic.
-     For a given election, the sequence of selections displayed to a user may be different
+ 
++    _types = [
++        ["ballot_name", InternationalizedText],
++        ["abbreviation", str],
++        ["color", str],
++        ["logo_uri", str]
++    ]
++
+     ballot_name  = field(default=InternationalizedText())
+     abbreviation  = field(default=None)
+     color  = field(default=None)
+@@ -241,6 +258,13 @@
+     selections for the contest.  See the wiki, readme's, and tests in this repo for more info
+     """
+ 
++    _types = [
++        ["ballot_name", InternationalizedText],
++        ["party_id", str],
++        ["image_uri", str],
++        ["is_write_in", bool],
++    ]
++
+     ballot_name  = field(default=InternationalizedText())
+     party_id  = field(default=None)
+     image_uri  = field(default=None)
+@@ -276,8 +300,11 @@
      however that information is not captured by default when encrypting a specific ballot.
-@@ -281,7 +280,7 @@
+     """
+ 
+-    #candidate_id: str
+-    #sequence_order: int
++    _types = [
++        ["candidate_id", str],
++        ["sequence_order", int]
++    ]
++
      """
      Used for ordering selections in a contest to ensure various encryption primitives are deterministic.
      The sequence order must be unique and should be representative of how the contests are represnted
--    on a "master" ballot in an external system.  The sequence order is not required to be in the order 
-+    on a "master" ballot in an external system.  The sequence order is not required to be in the order
-     in which they are displayed to a voter.  Any acceptable range of integer values may be provided.
-     """
- 
-@@ -295,11 +294,11 @@
- @dataclass(unsafe_hash=True)
- class ContestDescription(ElectionObjectBase, CryptoHashable):
-     """
--    Use this data entity for describing a contest and linking the contest 
-+    Use this data entity for describing a contest and linking the contest
-     to the associated candidates and parties.
-     See: https://developers.google.com/elections-data/reference/contest
-     Note: The ElectionGuard Data Spec deviates from the NIST model in that
--    `sequence_order` is a required field since it is used for ordering selections 
-+    `sequence_order` is a required field since it is used for ordering selections
-     in a contest to ensure various encryption primitives are deterministic.
-     For a given election, the sequence of contests displayed to a user may be different
+@@ -305,28 +332,33 @@
      however that information is not captured by default when encrypting a specific ballot.
-@@ -310,7 +309,7 @@
      """
-     Used for ordering contests in a ballot to ensure various encryption primitives are deterministic.
-     The sequence order must be unique and should be representative of how the contests are represnted
+ 
+-    #electoral_district_id: str
+-    #sequence_order: int
+-    """
+-    Used for ordering contests in a ballot to ensure various encryption primitives are deterministic.
+-    The sequence order must be unique and should be representative of how the contests are represnted
 -    on a "master" ballot in an external system.  The sequence order is not required to be in the order 
-+    on a "master" ballot in an external system.  The sequence order is not required to be in the order
-     in which they are displayed to a voter.  Any acceptable range of integer values may be provided.
+-    in which they are displayed to a voter.  Any acceptable range of integer values may be provided.
+-    """
++    _types = [
++        ["electoral_district_id", str],
++        ["sequence_order", int],
++
++        # Used for ordering contests in a ballot to ensure various encryption primitives are deterministic.
++        # The sequence order must be unique and should be representative of how the contests are represnted
++        # on a "master" ballot in an external system.  The sequence order is not required to be in the order
++        # in which they are displayed to a voter.  Any acceptable range of integer values may be provided.
+ 
+-    #vote_variation: VoteVariationType
++        ["vote_variation", VoteVariationType],
+ 
+     # Number of candidates that are elected in the contest ("n" of n-of-m).
+     # Note: a referendum is considered a specific case of 1-of-m in ElectionGuard
+-    #number_elected: int
++        ["number_elected", int],
+ 
+     # Maximum number of votes/write-ins per voter in this contest. Used in cumulative voting
+     # to indicate how many total votes a voter can spread around. In n-of-m elections, this will
+     # be None.
+-    #votes_allowed: Optional[int]
++        ["votes_allowed", "Optional"],
+ 
+     # Name of the contest, not necessarily as it appears on the ballot.
+-    #name: str
++        ["_name", str],
++
++        ["ballot_selections", [SelectionDescription]],
++        ["ballot_title", str],
++        ["ballot_subtitle", str]
++    ]
+ 
+     # For associating a ballot selection for the contest, i.e., a candidate, a ballot measure.
+     ballot_selections  = field(default_factory=lambda: [])
+@@ -345,7 +377,7 @@
+             and self.votes_allowed == other.votes_allowed
+             and self.number_elected == other.number_elected
+             and self.votes_allowed == other.votes_allowed
+-            and self.name == other.name
++            and self._name == other._name
+             and _list_eq(self.ballot_selections, other.ballot_selections)
+             and self.ballot_title == other.ballot_title
+             and self.ballot_subtitle == other.ballot_subtitle
+@@ -363,10 +395,10 @@
+             self.object_id,
+             self.sequence_order,
+             self.electoral_district_id,
+-            str(self.vote_variation.name),
++            str(self.vote_variation._name),
+             self.ballot_title,
+             self.ballot_subtitle,
+-            self.name,
++            self._name,
+             self.number_elected,
+             self.votes_allowed,
+             self.ballot_selections,
+@@ -531,23 +563,28 @@
+     See: https://developers.google.com/elections-data/reference/election
      """
  
-@@ -444,7 +443,7 @@
-     Use this entity to describe a contest that involves selecting one or more candidates.
-     See: https://developers.google.com/elections-data/reference/contest
-     Note: The ElectionGuard Data Spec deviates from the NIST model in that
--    this subclass is used purely for convenience 
-+    this subclass is used purely for convenience
-     """
+-    #election_scope_id: str
+-    #type: ElectionType
+-    #start_date: datetime
+-    #end_date: datetime
+-    #geopolitical_units: List[GeopoliticalUnit]
+-    #parties: List[Party]
+-    #candidates: List[Candidate]
+-    #contests: List[ContestDescription]
+-    #ballot_styles: List[BallotStyle]
+-    name  = field(default=None)
++    _types = [
++        ["election_scope_id", str],
++        ["_type", ElectionType],
++        ["start_date", datetime],
++        ["end_date", datetime],
++        ["geopolitical_units", [GeopoliticalUnit]],
++        ["parties", [Party]],
++        ["candidates", [Candidate]],
++        ["contests", [ContestDescription]],
++        ["ballot_styles", [BallotStyle]],
++        ["_name", str],
++        ["contact_information", ContactInformation]
++    ]
++
++    _name  = field(default=None)
+     contact_information  = field(default=None)
  
-     primary_party_ids  = field(default_factory=lambda: [])
-@@ -519,7 +518,7 @@
- @dataclass(unsafe_hash=True)
- class ElectionDescription(Serializable, CryptoHashable):
-     """
--    Use this entity for defining the structure of the election and associated 
-+    Use this entity for defining the structure of the election and associated
-     information such as candidates, contests, and vote counts.  This class is
-     based on the NIST Election Common Standard Data Specification.  Some deviations
-     from the standard exist.
-@@ -748,7 +747,7 @@
+     def __eq__(self, other )  :
+         return (
+             isinstance(other, ElectionDescription)
+             and self.election_scope_id == other.election_scope_id
+-            and self.type == other.type
++            and self._type == other._type
+             and self.start_date == other.start_date
+             and self.end_date == other.end_date
+             and _list_eq(self.geopolitical_units, other.geopolitical_units)
+@@ -555,7 +592,7 @@
+             and _list_eq(self.candidates, other.candidates)
+             and _list_eq(self.contests, other.contests)
+             and _list_eq(self.ballot_styles, other.ballot_styles)
+-            and self.name == other.name
++            and self._name == other._name
+             and self.contact_information == other.contact_information
          )
  
+@@ -566,10 +603,10 @@
+ 
+         return hash_elems(
+             self.election_scope_id,
+-            str(self.type.name),
++            str(self._type._name),
+             to_ticks(self.start_date),
+             to_ticks(self.end_date),
+-            self.name,
++            self._name,
+             self.contact_information,
+             self.geopolitical_units,
+             self.parties,
+@@ -739,13 +776,12 @@
+ 
+     description_hash  = field(init=False)
+ 
+-    def __post_init__(self, description )  :
+-        object.__setattr__(self, "description_hash", description.crypto_hash())
+-        object.__setattr__(self, "geopolitical_units", description.geopolitical_units)
+-        object.__setattr__(self, "ballot_styles", description.ballot_styles)
+-        object.__setattr__(
+-            self, "contests", self._generate_contests_with_placeholders(description)
+-        )
++    def __init__(self, description )  :
++        # TO-DO: why the post_init and the __setattr__ thing?
++        self.description_hash = description.crypto_hash()
++        self.geopolitical_units = description.geopolitical_units
++        self.ballot_styles = description.ballot_styles
++        self.contests = self._generate_contests_with_placeholders(description)
+ 
      def contest_for(
--        self, contest_id 
-+        self, contest_id
-     )  :
-         """
-         Get contest by id
-@@ -774,7 +773,7 @@
-         return style
- 
-     def get_contests_for(
--        self, ballot_style_id 
-+        self, ballot_style_id
-     )  :
-         """
-         Get contests for a ballot style
-@@ -791,10 +790,10 @@
-         return contests
- 
-     def _generate_contests_with_placeholders(
--        self, description 
-+        self, description
-     )  :
-         """
--        For each contest, append the `number_elected` number 
-+        For each contest, append the `number_elected` number
-         of placeholder selections to the end of the contest collection
-         """
-         contests  = list()
-@@ -814,7 +813,7 @@
- @dataclass(eq=True, unsafe_hash=True)
- class ElectionConstants(Serializable):
-     """
--    The constants for mathematical functions during the election. 
-+    The constants for mathematical functions during the election.
+         self, contest_id 
+@@ -844,26 +880,25 @@
+     `make_ciphertext_election_context` instead.
      """
  
-     large_prime = P
-@@ -912,7 +911,7 @@
+-    #number_of_guardians: int
+-    """
+-    The number of guardians necessary to generate the public key
+-    """
+-    #quorum: int
+-    """
+-    The quorum of guardians necessary to decrypt an election.  Must be less than `number_of_guardians`
+-    """
++    _types = [
++        ["number_of_guardians", int],
++        #The number of guardians necessary to generate the public key
++
++        ["quorum", int],
++        #The quorum of guardians necessary to decrypt an election.  Must be less than `number_of_guardians`
+ 
+     # the `joint public key (K)` in the [ElectionGuard Spec](https://github.com/microsoft/electionguard/wiki)
+-    #elgamal_public_key: ElementModP
++        ["elgamal_public_key", ElementModP],
+ 
+     # The hash of the election metadata
+-    #description_hash: ElementModQ
++        ["description_hash", ElementModQ],
+ 
+     # the `base hash code (𝑄)` in the [ElectionGuard Spec](https://github.com/microsoft/electionguard/wiki)
+-    #crypto_base_hash: ElementModQ
++        ["crypto_base_hash", ElementModQ],
+ 
+     # the `extended base hash code (𝑄')` in the [ElectionGuard Spec](https://github.com/microsoft/electionguard/wiki)
+-    #crypto_extended_base_hash: ElementModQ
++        ["crypto_extended_base_hash", ElementModQ]
++    ]
  
  
- def contest_description_with_placeholders_from(
--    description , placeholders 
-+    description , placeholders
- )  :
-     """
-     Generates a placeholder selection description
-@@ -963,7 +962,7 @@
+ def make_ciphertext_election_context(
+@@ -927,7 +962,7 @@
+         vote_variation=description.vote_variation,
+         number_elected=description.number_elected,
+         votes_allowed=description.votes_allowed,
+-        name=description.name,
++        _name=description._name,
+         ballot_selections=description.ballot_selections,
+         ballot_title=description.ballot_title,
+         ballot_subtitle=description.ballot_subtitle,
+@@ -954,11 +989,11 @@
+         )
+         return None
+ 
+-    placeholder_object_id = f"{contest.object_id}-{use_sequence_id}"
++    placeholder_object_id = str(contest.object_id) + "-" + str(use_sequence_id)
+     return SelectionDescription(
+-        f"{placeholder_object_id}-placeholder",
+-        f"{placeholder_object_id}-candidate",
+-        use_sequence_id,
++        object_id = str(placeholder_object_id) + "-placeholder",
++        candidate_id = str(placeholder_object_id) + "-candidate",
++        sequence_order = use_sequence_id,
+     )
  
  
- def generate_placeholder_selections_from(
--    contest , count 
-+    contest , count
- )  :
-     """
-     Generates the specified number of placeholder selections in ascending sequence order from the max selection sequence orderf
-diff -ruN orig/src/electionguard/election_builder.py build/src/electionguard/election_builder.py
---- orig/src/electionguard/election_builder.py	2020-10-23 19:36:39.000000000 +0200
-+++ build/src/electionguard/election_builder.py	2020-10-23 20:50:51.000000000 +0200
+diff -ruwN orig/electionguard/election_builder.py build/electionguard/election_builder.py
+--- orig/electionguard/election_builder.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/election_builder.py	2020-10-26 00:07:42.000000000 +0100
 @@ -1,7 +1,4 @@
 -from __future__ import annotations
 -
  from dataclasses import dataclass, field
 -from typing import Optional, Tuple
  
- from .election import (
+ from electionguard.election import (
      CiphertextElectionContext,
-diff -ruN orig/src/electionguard/elgamal.py build/src/electionguard/elgamal.py
---- orig/src/electionguard/elgamal.py	2020-10-23 19:36:40.000000000 +0200
-+++ build/src/electionguard/elgamal.py	2020-10-23 20:52:05.000000000 +0200
+@@ -35,7 +32,10 @@
+ 
+     elgamal_public_key  = field(default=None)
+ 
+-    def __post_init__(self)  :
++    def __init__(self, number_of_guardians, quorum, description):
++        self.number_of_guardians = number_of_guardians
++        self.quorum = quorum
++        self.description = description
+         self.internal_description = InternalElectionDescription(self.description)
+ 
+     def set_public_key(self, elgamal_public_key )  :
+diff -ruwN orig/electionguard/election_object_base.py build/electionguard/election_object_base.py
+--- orig/electionguard/election_object_base.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/election_object_base.py	2020-10-26 00:01:39.000000000 +0100
+@@ -2,6 +2,7 @@
+ 
+ from electionguard.serializable import Serializable
+ 
++__pragma__ ('kwargs')
+ 
+ @dataclass
+ class ElectionObjectBase(Serializable):
+diff -ruwN orig/electionguard/elgamal.py build/electionguard/elgamal.py
+--- orig/electionguard/elgamal.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/elgamal.py	2020-10-26 09:52:42.000000000 +0100
 @@ -1,5 +1,3 @@
 -from typing import Iterable, NamedTuple, Optional
 -
- from .dlog import discrete_log
- from .group import (
+ from electionguard.dlog import discrete_log
+ from electionguard.group import (
      ElementModQ,
-@@ -18,14 +16,14 @@
- from .utils import flatmap_optional, get_optional
+@@ -18,14 +16,18 @@
+ from electionguard.utils import flatmap_optional, get_optional
  
  
 -class ElGamalKeyPair(NamedTuple):
@@ -413,43 +963,155 @@ diff -ruN orig/src/electionguard/elgamal.py build/src/electionguard/elgamal.py
      #secret_key: ElementModQ
      #public_key: ElementModP
  
++    def __init__(self, secret_key, public_key):
++        self.secret_key = secret_key
++        self.public_key = public_key
++
  
 -class ElGamalCiphertext(NamedTuple):
 +class ElGamalCiphertext:
      """
      An "exponential ElGamal ciphertext" (i.e., with the plaintext in the exponent to allow for
      homomorphic addition). Create one with `elgamal_encrypt`. Add them with `elgamal_add`.
-@@ -117,7 +115,7 @@
+@@ -38,6 +40,13 @@
+     #data: ElementModP
+     """encrypted data or beta"""
  
- 
- def elgamal_encrypt(
--    m , nonce , public_key 
-+    m , nonce , public_key
- )  :
-     """
-     Encrypts a message with a given random nonce and an ElGamal public key.
-diff -ruN orig/src/electionguard/encrypt.py build/src/electionguard/encrypt.py
---- orig/src/electionguard/encrypt.py	2020-10-23 19:36:40.000000000 +0200
-+++ build/src/electionguard/encrypt.py	2020-10-23 20:52:00.000000000 +0200
-@@ -1,4 +1,3 @@
--from typing import List, Optional
- from uuid import getnode
- 
- from .ballot import (
-diff -ruN orig/src/electionguard/enum.py build/src/electionguard/enum.py
---- orig/src/electionguard/enum.py	1970-01-01 01:00:00.000000000 +0100
-+++ build/src/electionguard/enum.py	2020-10-23 20:50:22.000000000 +0200
-@@ -0,0 +1,5 @@
-+class Enum:
-+    pass
++    def __init__(self, pad, data):
++        self.pad = pad
++        self.data = data
 +
-+def unique(func):
-+    return func
-\ No newline at end of file
-diff -ruN orig/src/electionguard/group.py build/src/electionguard/group.py
---- orig/src/electionguard/group.py	2020-10-23 19:36:40.000000000 +0200
-+++ build/src/electionguard/group.py	2020-10-23 21:39:11.000000000 +0200
-@@ -2,44 +2,37 @@
++    def tuple(self):
++        return [self.pad, self.data]
++
+     def decrypt_known_product(self, product )  :
+         """
+         Decrypts an ElGamal ciphertext with a "known product" (the blinding factor used in the encryption).
+diff -ruwN orig/electionguard/encrypt.py build/electionguard/encrypt.py
+--- orig/electionguard/encrypt.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/encrypt.py	2020-10-26 09:52:49.000000000 +0100
+@@ -1,6 +1,3 @@
+-from typing import List, Optional
+-from uuid import getnode
+-
+ from electionguard.ballot import (
+     CiphertextBallot,
+     CiphertextBallotContest,
+@@ -25,69 +22,9 @@
+ from electionguard.logs import log_warning
+ from electionguard.nonces import Nonces
+ from electionguard.serializable import Serializable
+-from electionguard.tracker import get_hash_for_device
+ from electionguard.utils import get_optional, get_or_else_optional_func
+ 
+-
+-class EncryptionDevice(Serializable):
+-    """
+-    Metadata for encryption device
+-    """
+-
+-    #uuid: int
+-    #location: str
+-
+-    def __init__(self, location )  :
+-        self.uuid = generate_device_uuid()
+-        self.location = location
+-
+-    def get_hash(self)  :
+-        """
+-        Get hash for encryption device
+-        :return: Starting hash
+-        """
+-        return get_hash_for_device(self.uuid, self.location)
+-
+-
+-class EncryptionMediator(object):
+-    """
+-    An object for caching election and encryption state.
+-
+-    It composes Elections and Ballots.
+-    """
+-
+-    #_metadata: InternalElectionDescription
+-    #_encryption: CiphertextElectionContext
+-    #_seed_hash: ElementModQ
+-
+-    def __init__(
+-        self,
+-        election_metadata ,
+-        context ,
+-        encryption_device ,
+-    ):
+-        self._metadata = election_metadata
+-        self._encryption = context
+-        self._seed_hash = encryption_device.get_hash()
+-
+-    def encrypt(self, ballot )  :
+-        """
+-        Encrypt the specified ballot using the cached election context.
+-        """
+-        encrypted_ballot = encrypt_ballot(
+-            ballot, self._metadata, self._encryption, self._seed_hash
+-        )
+-        if encrypted_ballot is not None and encrypted_ballot.tracking_hash is not None:
+-            self._seed_hash = encrypted_ballot.tracking_hash
+-        return encrypted_ballot
+-
+-
+-def generate_device_uuid()  :
+-    """
+-    Get unique identifier for device
+-    :return: Unique identifier
+-    """
+-    return getnode()
++__pragma__ ('kwargs')
+ 
+ 
+ def selection_from(
+@@ -107,7 +44,7 @@
+     """
+ 
+     return PlaintextBallotSelection(
+-        description.object_id,
++        object_id=description.object_id,
+         vote=str(is_affirmative),
+         is_placeholder_selection=is_placeholder,
+     )
+@@ -127,7 +64,7 @@
+     for selection_description in description.ballot_selections:
+         selections.append(selection_from(selection_description))
+ 
+-    return PlaintextBallotContest(description.object_id, selections)
++    return PlaintextBallotContest(object_id=description.object_id, ballot_selections=selections)
+ 
+ 
+ def encrypt_selection(
+@@ -159,8 +96,8 @@
+ 
+     selection_description_hash = selection_description.crypto_hash()
+     nonce_sequence = Nonces(selection_description_hash, nonce_seed)
+-    selection_nonce = nonce_sequence[selection_description.sequence_order]
+-    disjunctive_chaum_pedersen_nonce = next(iter(nonce_sequence))
++    selection_nonce = nonce_sequence.get(selection_description.sequence_order)
++    disjunctive_chaum_pedersen_nonce = nonce_sequence.get(selection_description.sequence_order+1)
+ 
+     selection_representation = selection.to_int()
+ 
+@@ -249,8 +186,8 @@
+     # account for sequence id
+     contest_description_hash = contest_description.crypto_hash()
+     nonce_sequence = Nonces(contest_description_hash, nonce_seed)
+-    contest_nonce = nonce_sequence[contest_description.sequence_order]
+-    chaum_pedersen_nonce = next(iter(nonce_sequence))
++    contest_nonce = nonce_sequence.get(contest_description.sequence_order)
++    chaum_pedersen_nonce = nonce_sequence.get(contest_description.sequence_order+1)
+ 
+     encrypted_selections  = list()
+ 
+diff -ruwN orig/electionguard/group.py build/electionguard/group.py
+--- orig/electionguard/group.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/group.py	2020-10-26 10:25:14.000000000 +0100
+@@ -2,41 +2,34 @@
  # in the sense that performance may be less than hand-optimized C code, and no guarantees are
  # made about timing or other side-channels.
  
@@ -474,8 +1136,7 @@ diff -ruN orig/src/electionguard/group.py build/src/electionguard/group.py
 +R = P.minus(1).multiply(Q.modInv(P)).mod(P)
 +G = mpz("14245109091294741386751154342323521003543059865261911603340669522218159898070093327838595045175067897363301047764229640327930333001123401070596314469603183633790452807428416775717923182949583875381833912370889874572112086966300498607364501764494811956017881198827400327403252039184448888877644781610594801053753235453382508543906993571248387749420874609737451803650021788641249940534081464232937193671929586747339353451021712752406225276255010281004857233043241332527821911604413582442915993833774890228705495787357234006932755876972632840760599399514028393542345035433135159511099877773857622699742816228063106927776147867040336649025152771036361273329385354927395836330206311072577683892664475070720408447257635606891920123791602538518516524873664205034698194561673019535564273204744076336022130453963648114321050173994259620611015189498335966173440411967562175734606706258335095991140827763942280037063180207172918769921712003400007923888084296685269233298371143630883011213745082207405479978418089917768242592557172834921185990876960527013386693909961093302289646193295725135238595082039133488721800071459503353417574248679728577942863659802016004283193163470835709405666994892499382890912238098413819320185166580019604608311466")
  
--Q_MINUS_ONE  = Q - 1
-+Q_MINUS_ONE = Q - 1
+ Q_MINUS_ONE  = Q - 1
  
  
 -class ElementModQ(NamedTuple):
@@ -502,23 +1163,19 @@ diff -ruN orig/src/electionguard/group.py build/src/electionguard/group.py
 +        h = self.elem.toString(16)
          if len(h) % 2:
              h = "0" + h
--        return h
-+        return
- 
-     def to_int(self)  :
-         """
+         return h
 @@ -75,20 +68,25 @@
          ) and eq_elems(self, other)
  
      def __str__(self)  :
 -        return self.elem.digits()
 +        return self.elem.toString()
-+
+ 
 +    def toString(self)  :
 +        return str(self)
  
- 
 -class ElementModP(NamedTuple):
++
 +class ElementModP:
      """An element of the larger `mod p` space, i.e., in [0, P), where P is a 4096-bit prime."""
  
@@ -587,7 +1244,7 @@ diff -ruN orig/src/electionguard/group.py build/src/electionguard/group.py
          if isinstance(e, int):
              e = int_to_q_unchecked(e)
 -        t = (t + e.elem) % Q
-+        t = t.sum(e.elem).mod(Q)
++        t = t.add(e.elem).mod(Q)
  
      return ElementModQ(t)
  
@@ -618,7 +1275,7 @@ diff -ruN orig/src/electionguard/group.py build/src/electionguard/group.py
      return mult_q(a, int_to_q_unchecked(inverse))
  
  
-@@ -286,11 +267,11 @@
+@@ -286,7 +267,7 @@
      """
      if isinstance(a, int):
          a = int_to_q_unchecked(a)
@@ -627,17 +1284,12 @@ diff -ruN orig/src/electionguard/group.py build/src/electionguard/group.py
  
  
  def a_plus_bc_q(
--    a , b , c 
-+    a , b , c
- )  :
-     """
-     Computes (a + b * c) mod q.
 @@ -302,7 +283,7 @@
      if isinstance(c, int):
          c = int_to_q_unchecked(c)
  
 -    return ElementModQ((a.elem + b.elem * c.elem) % Q)
-+    return ElementModQ(a.elem.sum(b.elem.multiply(c.elem)).mod(Q))
++    return ElementModQ(a.elem.add(b.elem.multiply(c.elem)).mod(Q))
  
  
  def mult_inv_p(e )  :
@@ -706,9 +1358,15 @@ diff -ruN orig/src/electionguard/group.py build/src/electionguard/group.py
      return int_to_q_unchecked(random)
  
  
-diff -ruN orig/src/electionguard/hash.py build/src/electionguard/hash.py
---- orig/src/electionguard/hash.py	2020-10-23 19:36:40.000000000 +0200
-+++ build/src/electionguard/hash.py	2020-10-23 20:49:05.000000000 +0200
+@@ -416,4 +399,4 @@
+     """
+     Returns whether the two elements hold the same value.
+     """
+-    return a.elem == b.elem
++    return a.elem.eq(b.elem)
+diff -ruwN orig/electionguard/hash.py build/electionguard/hash.py
+--- orig/electionguard/hash.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/hash.py	2020-10-26 01:28:12.000000000 +0100
 @@ -1,11 +1,3 @@
 -from abc import abstractmethod
 -from hashlib import sha256
@@ -719,7 +1377,7 @@ diff -ruN orig/src/electionguard/hash.py build/src/electionguard/hash.py
 -    Sequence,
 -)
  
- from .group import (
+ from electionguard.group import (
      ElementModPOrQ,
 @@ -16,13 +8,11 @@
  )
@@ -804,44 +1462,13 @@ diff -ruN orig/src/electionguard/hash.py build/src/electionguard/hash.py
 -    # We don't need the checked version of int_to_q, because the
 -    # modulo operation here guarantees that we're in bounds.
 -    return int_to_q_unchecked(int.from_bytes(h.digest(), byteorder="big") % Q_MINUS_ONE)
-+    # TO-DO: ensure we use don't use this
-+    return "no-hashing-here"
++    # TO-DO: this should use SHA256
++    return int_to_q_unchecked(1)
 +
-diff -ruN orig/src/electionguard/logger.js build/src/electionguard/logger.js
---- orig/src/electionguard/logger.js	1970-01-01 01:00:00.000000000 +0100
-+++ build/src/electionguard/logger.js	2020-10-23 21:27:18.000000000 +0200
-@@ -0,0 +1,26 @@
-+class ConsoleLogger {
-+  constructor() {
-+  }
-+
-+  debug(message) {
-+    console.log("debug: " + message)
-+  }
-+
-+  warning(message) {
-+    console.log("warning: " + message)
-+  }
-+
-+  info(message) {
-+    console.log("info: " + message)
-+  }
-+
-+  error(message) {
-+    console.log("error: " + message)
-+  }
-+
-+  critical(message) {
-+    console.log("critical: " + message)
-+  }
-+}
-+
-+export var Logger = function() { return new ConsoleLogger(); }
-\ No newline at end of file
-diff -ruN orig/src/electionguard/logs.py build/src/electionguard/logs.py
---- orig/src/electionguard/logs.py	2020-10-23 19:36:41.000000000 +0200
-+++ build/src/electionguard/logs.py	2020-10-23 21:27:06.000000000 +0200
-@@ -1,9 +1,4 @@
+diff -ruwN orig/electionguard/logs.py build/electionguard/logs.py
+--- orig/electionguard/logs.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/logs.py	2020-10-25 23:54:57.000000000 +0100
+@@ -1,14 +1,11 @@
 -import inspect
 -import logging
 -import os.path
@@ -850,15 +1477,21 @@ diff -ruN orig/src/electionguard/logs.py build/src/electionguard/logs.py
 -from logging.handlers import RotatingFileHandler
 +from logger import Logger
  
- from .singleton import Singleton
+ from electionguard.singleton import Singleton
  
-@@ -18,58 +13,13 @@
+ FORMAT = "[%(process)d:%(asctime)s]:%(levelname)s:%(message)s"
+ 
++__pragma__ ('kwargs')
++
+ 
+ class ElectionGuardLog(Singleton):
+     """
+@@ -18,87 +15,42 @@
      #__logger: logging.Logger
  
      def __init__(self)  :
 -        super(ElectionGuardLog, self).__init__()
-+        super().__init__()
- 
+-
 -        self.__logger = logging.getLogger("electionguard")
 -        self.__logger.addHandler(self._get_file_handler())
 -        self.__logger.addHandler(self._get_stream_handler())
@@ -876,7 +1509,8 @@ diff -ruN orig/src/electionguard/logs.py build/src/electionguard/logs.py
 -        filename = stack[4][1]
 -        line = stack[4][2]
 -        funcname = stack[4][3]
--
++        super().__init__()
+ 
 -        return filename, funcname, line
 +        self.__logger = Logger()
  
@@ -910,55 +1544,160 @@ diff -ruN orig/src/electionguard/logs.py build/src/electionguard/logs.py
 -        file_handler.setFormatter(logging.Formatter(FORMAT))
 -        return file_handler
 -
-     def debug(self, message , *args , **kwargs )  :
+-    def debug(self, message , *args , **kwargs )  :
++    def debug(self, message)  :
          """
          Logs a debug message
-diff -ruN orig/src/electionguard/nonces.py build/src/electionguard/nonces.py
---- orig/src/electionguard/nonces.py	2020-10-23 19:36:41.000000000 +0200
-+++ build/src/electionguard/nonces.py	2020-10-23 20:51:32.000000000 +0200
+         """
+-        self.__logger.debug(self.__formatted_message(message), *args, **kwargs)
++        self.__logger.debug(self.__formatted_message(message))
+ 
+-    def info(self, message , *args , **kwargs )  :
++    def info(self, message)  :
+         """
+         Logs a info message
+         """
+-        self.__logger.info(self.__formatted_message(message), *args, **kwargs)
++        self.__logger.info(self.__formatted_message(message))
+ 
+-    def warn(self, message , *args , **kwargs )  :
++    def warn(self, message)  :
+         """
+         Logs a warning message
+         """
+-        self.__logger.warning(self.__formatted_message(message), *args, **kwargs)
++        self.__logger.warning(self.__formatted_message(message))
+ 
+-    def error(self, message , *args , **kwargs )  :
++    def error(self, message)  :
+         """
+         Logs a error message
+         """
+-        self.__logger.error(self.__formatted_message(message), *args, **kwargs)
++        self.__logger.error(self.__formatted_message(message))
+ 
+-    def critical(self, message , *args , **kwargs )  :
++    def critical(self, message)  :
+         """
+         Logs a critical message
+         """
+-        self.__logger.critical(self.__formatted_message(message), *args, **kwargs)
++        self.__logger.critical(self.__formatted_message(message))
+ 
+ 
+ LOG = ElectionGuardLog()
+@@ -108,32 +60,32 @@
+     """
+     Logs a debug message to the console and the file log.
+     """
+-    LOG.debug(msg, *args, **kwargs)
++    LOG.debug(msg)
+ 
+ 
+ def log_info(msg , *args , **kwargs )  :
+     """
+     Logs an information message to the console and the file log.
+     """
+-    LOG.info(msg, *args, **kwargs)
++    LOG.info(msg)
+ 
+ 
+ def log_warning(msg , *args , **kwargs )  :
+     """
+     Logs a warning message to the console and the file log.
+     """
+-    LOG.warn(msg, *args, **kwargs)
++    LOG.warn(msg)
+ 
+ 
+ def log_error(msg , *args , **kwargs )  :
+     """
+     Logs an error message to the console and the file log.
+     """
+-    LOG.error(msg, *args, **kwargs)
++    LOG.error(msg)
+ 
+ 
+ def log_critical(msg , *args , **kwargs )  :
+     """
+     Logs a critical message to the console and the file log.
+     """
+-    LOG.critical(msg, *args, **kwargs)
++    LOG.critical(msg)
+diff -ruwN orig/electionguard/nonces.py build/electionguard/nonces.py
+--- orig/electionguard/nonces.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/nonces.py	2020-10-26 01:01:32.000000000 +0100
 @@ -1,10 +1,8 @@
 -from typing import Union, Sequence, List, overload
-+from .group import ElementModQ, ElementModPOrQ
-+from .hash import hash_elems
- 
--from electionguard.group import ElementModQ, ElementModPOrQ
--from electionguard.hash import hash_elems
- 
 -
+ from electionguard.group import ElementModQ, ElementModPOrQ
+ from electionguard.hash import hash_elems
+ 
+ 
 -class Nonces(Sequence[ElementModQ]):
 +class Nonces:
      """
      Creates a sequence of random elements in [0,Q), seeded from an initial element in [0,Q).
      If you start with the same seed, you'll get exactly the same sequence. Optional string
-@@ -23,16 +21,14 @@
+@@ -22,27 +20,13 @@
+         else:
              self.__seed = seed
  
-     # https://github.com/python/mypy/issues/4108
+-    # https://github.com/python/mypy/issues/4108
 -    @overload
-     def __getitem__(self, index )  :
-         pass
- 
+-    def __getitem__(self, index )  :
+-        pass
+-
 -    @overload
-     def __getitem__(self, index )  :
-         pass
- 
-     def __getitem__(
--        self, index  
-+        self, index
+-    def __getitem__(self, index )  :
+-        pass
+-
+-    def __getitem__(
++    def get(
+         self, index  
      )   :
-         if isinstance(index, int):
+-        if isinstance(index, int):
              return self.get_with_headers(index)
-diff -ruN orig/src/electionguard/serializable.py build/src/electionguard/serializable.py
---- orig/src/electionguard/serializable.py	2020-10-23 19:36:41.000000000 +0200
-+++ build/src/electionguard/serializable.py	2020-10-23 20:51:27.000000000 +0200
-@@ -1,25 +1,7 @@
+-        else:
+-            if isinstance(index.stop, int):
+-                # Handling slices is a pain: https://stackoverflow.com/a/42731787
+-                indices = range(index.start or 0, index.stop, index.step or 1)
+-                return [self[i] for i in indices]
+-            else:
+-                raise TypeError("Cannot take unbounded slice of Nonces")
++
++    def get_slice(self, start, stop):
++        return [self.get(i) for i in range(start, stop)]
+ 
+     def __len__(self)  :
+         raise TypeError("Nonces does not have finite length")
+diff -ruwN orig/electionguard/proof.py build/electionguard/proof.py
+--- orig/electionguard/proof.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/proof.py	2020-10-25 16:43:36.000000000 +0100
+@@ -16,10 +16,10 @@
+ class Proof(Serializable):
+     """Base class for proofs with name and usage case"""
+ 
+-    name  = "Proof"
++    _name  = "Proof"
+     usage  = ProofUsage.Unknown
+ 
+     def __init__(self)  :
+         object.__setattr__(
+-            self, "name", space_between_capitals(self.__class__.__name__)
++            self, "_name", space_between_capitals(self.__class__.__name__)
+         )
+diff -ruwN orig/electionguard/serializable.py build/electionguard/serializable.py
+--- orig/electionguard/serializable.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/serializable.py	2020-10-25 18:21:06.000000000 +0100
+@@ -1,29 +1,14 @@
  from dataclasses import dataclass
  from datetime import datetime
  import re
 -from os import path
 -from typing import Any, cast, Type, TypeVar
  
--from jsons import (
+ from jsons import (
 -    dump,
 -    dumps,
 -    NoneType,
@@ -970,29 +1709,25 @@ diff -ruN orig/src/electionguard/serializable.py build/src/electionguard/seriali
 -    set_validator,
 -    suppress_warnings,
 -    default_nonetype_deserializer,
--)
--
++    dump_json,
++    dump_json_object,
++    parse_json,
++    parse_json_object
+ )
+ 
 -S = TypeVar("S", bound="Serializable")
 -T = TypeVar("T")
- 
- JSON_FILE_EXTENSION  = ".json"
- WRITE  = "w"
-@@ -41,7 +23,8 @@
-         :param strip_privates: strip private variables
-         :return: the json string representation of this object
-         """
--        return write_json(self, strip_privates)
-+        # TO-DO: implement strip_privates
-+        return JSON.stringify(self)
- 
-     def to_json_object(self, strip_privates  = True)  :
-         """
-@@ -49,18 +32,8 @@
-         :param strip_privates: strip private variables
-         :return: the json representation of this object
-         """
--        return write_json_object(self, strip_privates)
 -
+-JSON_FILE_EXTENSION  = ".json"
+-WRITE  = "w"
+-READ  = "r"
+ JSON_PARSE_ERROR = '{"error": "Object could not be parsed due to json issue"}'
+ # TODO Issue #??: Jsons library incorrectly dumps class method
+ KEYS_TO_REMOVE = ["from_json", "from_json_file", "from_json_object"]
+@@ -51,17 +36,6 @@
+         """
+         return write_json_object(self, strip_privates)
+ 
 -    def to_json_file(
 -        self, file_name , file_path  = "", strip_privates  = True
 -    )  :
@@ -1003,26 +1738,14 @@ diff -ruN orig/src/electionguard/serializable.py build/src/electionguard/seriali
 -        :param strip_privates: Strip private variables
 -        """
 -        write_json_file(self, file_name, file_path, strip_privates)
-+        # TO-DO: implement strip_privates
-+        return self
- 
+-
      @classmethod
      def from_json(cls , data )  :
-@@ -68,7 +41,7 @@
-         Deserialize the provided data string into the specified instance
-         :param data: JSON string
          """
--        return read_json(data, cls)
-+        return JSON.parse(data)
+@@ -78,35 +52,6 @@
+         """
+         return read_json_object(data, cls)
  
-     @classmethod
-     def from_json_object(cls , data )  :
-@@ -76,175 +49,6 @@
-         Deserialize the provided data object into the specified instance
-         :param data: JSON object
-         """
--        return read_json_object(data, cls)
--
 -    @classmethod
 -    def from_json_file(cls , file_name , file_path  = "")  :
 -        """
@@ -1052,15 +1775,13 @@ diff -ruN orig/src/electionguard/serializable.py build/src/electionguard/seriali
 -            else:
 -                _remove_key(obj[i], key_to_remove)
 -
-+        return data
  
--def write_json(object_to_write , strip_privates  = True)  :
--    """
--    Serialize to json string
--    :param object_to_write: object to write to json
--    :param strip_privates: strip private variables
--    :return: the json string representation of this object
--    """
+ def write_json(object_to_write , strip_privates  = True)  :
+     """
+@@ -115,16 +60,7 @@
+     :param strip_privates: strip private variables
+     :return: the json string representation of this object
+     """
 -    set_serializers()
 -    suppress_warnings()
 -    try:
@@ -1071,15 +1792,14 @@ diff -ruN orig/src/electionguard/serializable.py build/src/electionguard/seriali
 -        return json_string
 -    except JsonsError:
 -        return JSON_PARSE_ERROR
--
--
--def write_json_object(object_to_write , strip_privates  = True)  :
--    """
--    Serialize to json object
--    :param object_to_write: object to write to json
--    :param strip_privates: strip private variables
--    :return: the json representation of this object
--    """
++    return dump_json(object_to_write, strip_privates)
+ 
+ 
+ def write_json_object(object_to_write , strip_privates  = True)  :
+@@ -134,35 +70,7 @@
+     :param strip_privates: strip private variables
+     :return: the json representation of this object
+     """
 -    set_serializers()
 -    suppress_warnings()
 -    try:
@@ -1109,26 +1829,24 @@ diff -ruN orig/src/electionguard/serializable.py build/src/electionguard/seriali
 -    json_file_path  = path.join(file_path, file_name + JSON_FILE_EXTENSION)
 -    with open(json_file_path, WRITE) as json_file:
 -        json_file.write(write_json(object_to_write, strip_privates))
--
--
--def read_json(data , class_out )  :
--    """
--    Deserialize json file to object
--    :param data: Json file data
--    :param class_out: Object type
--    :return: Deserialized object
--    """
++    return dump_json_object(object_to_write, strip_privates)
+ 
+ 
+ def read_json(data , class_out )  :
+@@ -172,8 +80,7 @@
+     :param class_out: Object type
+     :return: Deserialized object
+     """
 -    set_deserializers()
 -    return cast(T, loads(data, class_out))
--
--
--def read_json_object(data , class_out )  :
--    """
--    Deserialize json file to object
--    :param data: Json file data
--    :param class_out: Object type
--    :return: Deserialized object
--    """
++    return parse_json(data, class_out)
+ 
+ 
+ def read_json_object(data , class_out )  :
+@@ -183,68 +90,4 @@
+     :param class_out: Object type
+     :return: Deserialized object
+     """
 -    set_deserializers()
 -    return cast(T, load(data, class_out))
 -
@@ -1194,39 +1912,26 @@ diff -ruN orig/src/electionguard/serializable.py build/src/electionguard/seriali
 -    """
 -    tz_corrected = re.sub("Z$", "+00:00", value)
 -    return datetime.fromisoformat(tz_corrected)
-+#TO-DO: bigInt serialization?
-diff -ruN orig/src/electionguard/singleton.py build/src/electionguard/singleton.py
---- orig/src/electionguard/singleton.py	2020-10-23 19:36:42.000000000 +0200
-+++ build/src/electionguard/singleton.py	2020-10-23 20:51:21.000000000 +0200
++    return parse_json_object(data, class_out)
+diff -ruwN orig/electionguard/singleton.py build/electionguard/singleton.py
+--- orig/electionguard/singleton.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/singleton.py	2020-10-25 11:36:10.000000000 +0100
 @@ -1,4 +1,3 @@
 -from typing import Any
  
  
  class Singleton:
-diff -ruN orig/src/electionguard/tracker.py build/src/electionguard/tracker.py
---- orig/src/electionguard/tracker.py	2020-10-23 19:36:42.000000000 +0200
-+++ build/src/electionguard/tracker.py	2020-10-23 20:51:18.000000000 +0200
+diff -ruwN orig/electionguard/tracker.py build/electionguard/tracker.py
+--- orig/electionguard/tracker.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/tracker.py	2020-10-25 11:36:10.000000000 +0100
 @@ -1,4 +1,3 @@
 -from typing import List, Optional
- from .hash import hash_elems
- from .group import ElementModQ
- from .words import get_word
-@@ -17,10 +16,10 @@
- 
- 
- def get_rotating_tracker_hash(
--    prev_hash , timestamp , ballot_hash 
-+    prev_hash , timestamp , ballot_hash
- )  :
-     """
--    Get the rotated tracker hash for a particular ballot. 
-+    Get the rotated tracker hash for a particular ballot.
-     :param prev_hash: Previous hash or starting hash from device
-     :param timestamp: Timestamp in ticks
-     :param ballot_hash: Hash of ballot to track
-diff -ruN orig/src/electionguard/utils.py build/src/electionguard/utils.py
---- orig/src/electionguard/utils.py	2020-10-23 19:36:42.000000000 +0200
-+++ build/src/electionguard/utils.py	2020-10-23 20:51:14.000000000 +0200
+ from electionguard.hash import hash_elems
+ from electionguard.group import ElementModQ
+ from electionguard.words import get_word
+diff -ruwN orig/electionguard/utils.py build/electionguard/utils.py
+--- orig/electionguard/utils.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/utils.py	2020-10-25 18:35:37.000000000 +0100
 @@ -1,10 +1,5 @@
  from datetime import datetime, timezone
 -from os import mkdir, path
@@ -1238,108 +1943,111 @@ diff -ruN orig/src/electionguard/utils.py build/src/electionguard/utils.py
  
  
  def get_optional(optional )  :
-@@ -18,7 +13,7 @@
+@@ -74,8 +69,9 @@
  
+     ticks = (
+         date_time.timestamp()
+-        if date_time.tzinfo
+-        else date_time.astimezone(timezone.utc).timestamp()
++        # TO-DO: timezone check needed
++        # if date_time.tzinfo
++        # else date_time.astimezone(timezone.utc).timestamp()
+     )
+     return int(ticks)
  
- def match_optional(
--    optional , none_func  , some_func  
-+    optional , none_func  , some_func
- )  :
-     """
-     General-purpose pattern-matching function to handle `Optional`.
-diff -ruN orig/src/electionguard/words.py build/src/electionguard/words.py
---- orig/src/electionguard/words.py	2020-10-23 19:36:43.000000000 +0200
-+++ build/src/electionguard/words.py	2020-10-23 20:51:11.000000000 +0200
+diff -ruwN orig/electionguard/words.py build/electionguard/words.py
+--- orig/electionguard/words.py	2020-10-26 01:27:39.000000000 +0100
++++ build/electionguard/words.py	2020-10-25 11:36:10.000000000 +0100
 @@ -1,5 +1,3 @@
 -from typing import Optional
 -
  MIN_INDEX = 0
  MAX_INDEX = 4095
  
-diff -ruN orig/src/secure_random.js build/src/secure_random.js
---- orig/src/secure_random.js	1970-01-01 01:00:00.000000000 +0100
-+++ build/src/secure_random.js	2020-10-23 19:07:19.000000000 +0200
-@@ -0,0 +1,83 @@
-+!function(globals){
-+'use strict'
-+
-+//*** UMD BEGIN
-+if (typeof define !== 'undefined' && define.amd) { //require.js / AMD
-+  define([], function() {
-+    return secureRandom
-+  })
-+} else if (typeof module !== 'undefined' && module.exports) { //CommonJS
-+  module.exports = secureRandom
-+} else { //script / browser
-+  globals.secureRandom = secureRandom
-+}
-+//*** UMD END
-+
-+//options.type is the only valid option
-+function secureRandom(count, options) {
-+  options = options || {type: 'Array'}
-+  //we check for process.pid to prevent browserify from tricking us
-+  if (
-+    typeof process != 'undefined'
-+    && typeof process.pid == 'number'
-+    && process.versions
-+    && process.versions.node
-+  ) {
-+    return nodeRandom(count, options)
-+  } else {
-+    var crypto = window.crypto || window.msCrypto
-+    if (!crypto) throw new Error("Your browser does not support window.crypto.")
-+    return browserRandom(count, options)
-+  }
-+}
-+
-+function nodeRandom(count, options) {
-+  var crypto = require('crypto')
-+  var buf = crypto.randomBytes(count)
-+
-+  switch (options.type) {
-+    case 'Array':
-+      return [].slice.call(buf)
-+    case 'Buffer':
-+      return buf
-+    case 'Uint8Array':
-+      var arr = new Uint8Array(count)
-+      for (var i = 0; i < count; ++i) { arr[i] = buf.readUInt8(i) }
-+      return arr
-+    default:
-+      throw new Error(options.type + " is unsupported.")
-+  }
-+}
-+
-+function browserRandom(count, options) {
-+  var nativeArr = new Uint8Array(count)
-+  var crypto = window.crypto || window.msCrypto
-+  crypto.getRandomValues(nativeArr)
-+
-+  switch (options.type) {
-+    case 'Array':
-+      return [].slice.call(nativeArr)
-+    case 'Buffer':
-+      try { var b = new Buffer(1) } catch(e) { throw new Error('Buffer not supported in this environment. Use Node.js or Browserify for browser support.')}
-+      return new Buffer(nativeArr)
-+    case 'Uint8Array':
-+      return nativeArr
-+    default:
-+      throw new Error(options.type + " is unsupported.")
-+  }
-+}
-+
-+secureRandom.randomArray = function(byteCount) {
-+  return secureRandom(byteCount, {type: 'Array'})
-+}
-+
-+secureRandom.randomUint8Array = function(byteCount) {
-+  return secureRandom(byteCount, {type: 'Uint8Array'})
-+}
-+
-+secureRandom.randomBuffer = function(byteCount) {
-+  return secureRandom(byteCount, {type: 'Buffer'})
-+}
-+
-+
-+}(this);
+diff -ruwN orig/tests/test_voter.py build/tests/test_voter.py
+--- orig/tests/test_voter.py	2020-10-26 01:27:40.000000000 +0100
++++ build/tests/test_voter.py	2020-10-26 09:58:54.000000000 +0100
+@@ -1,9 +1,8 @@
+-import unittest
+ from tests.utils import create_election_test_message, joint_election_key_test_message
+ from decidim.electionguard.voter import Voter
+ 
+ 
+-class TestVoter(unittest.TestCase):
++class TestVoter:
+     def setUp(self):
+         self.voter = Voter('a-voter')
+ 
+@@ -16,7 +15,7 @@
+             'question2': ['question2-first-project-selection', 'question2-fourth-project-selection']
+         })
+ 
+-        print(encrypted_ballot)
++        print(JSON.stringify(encrypted_ballot))
+ 
+         # TODO: assert ballot keys
+         # TODO: assert ballot constests keys
+@@ -25,6 +24,3 @@
+         # TODO: assert number of selections for each contest
+         # TODO: assert decryption of the ballot
+ 
+-
+-if __name__ == '__main__':
+-    unittest.main()
+diff -ruwN orig/tests/utils.py build/tests/utils.py
+--- orig/tests/utils.py	2020-10-26 01:27:40.000000000 +0100
++++ build/tests/utils.py	2020-10-25 16:44:00.000000000 +0100
+@@ -10,7 +10,7 @@
+             {'name': 'clara', 'public_key': '...'}
+         ],
+         'description': {
+-            'name': {'text': [{'value': 'Test election', 'language': 'en'}]},
++            '_name': {'text': [{'value': 'Test election', 'language': 'en'}]},
+             'start_date': '2021-03-01T08:00:00-05:00',
+             'end_date': '2021-03-01T20:00:00-05:00',
+             'candidates': [
+@@ -31,7 +31,7 @@
+                     'object_id': 'question1',
+                     'sequence_order': 0,
+                     'vote_variation': 'one_of_m',
+-                    'name': 'Question 1',
++                    '_name': 'Question 1',
+                     'number_elected': 1,
+                     'minimum_elected': 1,
+                     'ballot_title': {'text': [{'value': 'Do you agree?', 'language': 'en'}]},
+@@ -46,7 +46,7 @@
+                     'object_id': 'question2',
+                     'sequence_order': 1,
+                     'vote_variation': 'n_of_m',
+-                    'name': 'Question 2',
++                    '_name': 'Question 2',
+                     'number_elected': 2,
+                     'minimum_elected': 0,
+                     'ballot_title': {'text': [{'value': 'Choose the projects that you like', 'language': 'en'}]},
+@@ -77,7 +77,7 @@
+             'election_public_key_proof': {
+                 'challenge': '7ER1o3ZlShoCD8Okg5Q6uaUAJUpL1l7SdD4pg6CkAw8=',
+                 'commitment': 'pl8zhjfiBLMCm/IgqapjuvmiU0d1EmfOANkf+ld3+R+EqWLZQ0K4l3Ae3Dv3ipP2dgKqNv/wGe61ZoRvhFGkQJnxXo/nFH3OR9bwqZLHpv6ZYeSX3ajD/f+M7nFUCbxDyZvlZYcPLcr2LSgFPXyKDr9tqpazpkQBo44ztZDIe1llv+aaxoiJP/A36IO0bVGKDG2BEU99+qUPMk8rxzaahI3u7yhI8MOC2FJUWTWwTZgnWsV2DnduGaW2cipCG1mbs3OfqHTodl10rOeLngw9CyybfvZdp0YIv1WLGO6S5jadJBYhptUCpamLW0C5pVpCG8uvTaR28kKS9h0NqEu6qa8g5Ow5bKrfxV2vb9SH4Ut1+2+9HqPyjGN16jKMIT79ZCu1iEEN2+RUw9K0rdRaqhKcOY9imLeHk8L5D0GJpR5MYgluFCmDl/+YDZbzE/m165OPiirqlSpY9gn9jCflDuXx9gR/kqsw28z1ImYo7eBDRPG2tQGgExibhycK4SLxPBL3nvYwtlrvd0EtP7eyA6Wb1RotJ92snSH5J5SleNBNCFEWm6cnlGGJ5el/2/kG/jcDVXLz4V02s6+FTbWXTF6s9mOg9Jp65av/T2umlfWvgT/r72AGyOn4hQtI9aGdyv7xPxyU7iiZa2h7BUpEQ3R5F2CO8NmBpdS0m5VEfrA=',  # noqa: E501
+-                'name': 'Schnorr Proof',
++                '_name': 'Schnorr Proof',
+                 'public_key': 'UxmYOgII7XfkqtmIhkm2I3W5g83recLynlu+z6qK9/iSyB1hW+H7j7KpKnd+pLAOCnxrKA7Kglxk4x5jQdXfYRhiTkL9TzIhejVoXpFFEqH8I1+8mPCYMPY1GxBhZodbAl3CRSIRqS7IMQfFZ6gtZFjrij5P70SuXYyI+K2igVcQuG1BK8CKFXpzDxiKhbVltIjNk4un8K48lTkNqH+nyJ+GQiBUi+x2/gGxgF6naQO9Z/ZAgTcECf9J7LnPxY/0iFkAyJsQiyDpktPCVfy5aAfUYwbDxatIIoE7ujKXyxrbEHPu+VtX3GvLRb53kPp8Wuh3b8eDSagwmh4Fa/yHpcfq1CJSGT4C4K55VbtQ1PcMTQyGJEtgBjpU/3XGyLK1TarnmFlZonKRiuYhHMLKmj4E1F5jaJ12/AwS+jXjTASZwMHgVdflkMCH/rceutcLTKtISNtZdGmP9JcnQ1uOCr1EQe/2sTlz1M8YzvupoPtBUE9ZtgvxGzPKx+tldJQv1cqVsAYTmEL3McUFeK3YLa5819kAOdZ/1tGy3pk3mIRdbiD1GFyiW3MEOwEAKVikIxninC0TwIw0ZiKh5C6YP3mOTN2C8zmWle1uPihO7XLK0f4TKC0pyCMXklkyZa05ZmjWgctJ17RWjLE1boNVTFwFOmy3ASErzDGbJtu9g8A=',  # noqa: E501
+                 'response': 'puH3SmTJnSn4JL3uDM5exiB0mDa67vibiu3qkA8IbCM=',
+                 'usage': 'SecretValue'
+@@ -90,7 +90,7 @@
+             'election_public_key_proof': {
+                 'challenge': 'jTFR44h84a0/XwiKNwdtSDaTb3EYJjOuePX6uaYn2Ds=',
+                 'commitment': 'hQXsT3tF9zhu5LcK4IFr8sTZmMXbkUMRXqFzlTUdV8ekcB/0ZwoC6zWcdia5BpSv4og2eIUR1kuGS+rTSa4LkaUd4Zl3pZ2M+PYR4J/chnBkVl70fRQBbCBiOi1/QtVniY+hOFR/x/r/sUYoTTVql2uy/mAsk12DXz5jwzFOsLEXCuagJxk9cCmzU8VTFLkIespup0A3HXFkdIihhUoXI24itIPmknn8umeJcgdSZkAc0uUzn/PFeg2Oul7any6DoLVA5nqpisp04w0NVSCxGEdNpS5fNKxpjm1HJr3xzqyySm21o2W8gokThV1y+NZsxGyRekjeDN5e5LeK2gTkLXyhtpFbEH6nGYYxHGYZrpt1ynamK41j8xp/FkibkGqzdBbkVuaLL+FcGy0PO6fGH2GyJEgPdOrAk3Jby1zaAz9UixLTwX31vCXeYVVStCwuHjT6uWKLDFNjXAUDRepg+TvejGUWKAuVF7QvH7hXoy2yuQT7abf7Z07TE0ZBTte+7UMUp/4rd4V6pWv/TiryLpkV3/8gUgNghfX5kP4jVxmXB0SHwdyeJ8rOjRt6KNgkK+SBds8GvB4ndj3QI7V9MXSH127yfNgwGcI74tekWIWjV/Z9mZZroZgbWbirINHV/2R4jvNihoEJOUQyqR1GC+x39Ew8jfjb1WgtVGJcZ4U=',  # noqa: E501
+-                'name': 'Schnorr Proof',
++                '_name': 'Schnorr Proof',
+                 'public_key': '7+o8hAuyqbgCBixFFyIxUim4sGgjsVhQVP0o10ohgBN5++f2ohuBvSbBb9VzKx4vmRzd7sfCxwpAeo+z/QQVmDHWLrcp17y/kYbipB3cE3ewsneojyh+qEqY5H9/QiRZkC2X3XVqPVxJv5aVS3Um4vFsfCgS6uWc6HxayWu0TOgQu5FNH4hQxQH7QI68u4uthuvyUfH0t7rqXgOoBbXpm3vPrJBnLvCaxL3FBUvQH27nW5prQoRFCjzUZgEJJtUbykIPWCI/VMT/Ui8jwx3EA8bsVwUti3Mdptlv9MilOlPKo7ChaNg/vzVqsmX2xKXGXhBijgG1iey+5FnIZPQBs/fCkHc9h13pVaEJemJDhZIhiYQ2KxDmf2bWk/ZR5LKX4kFpyY+MI3KSkK2HGrvFiLej2Wxc3jWUK3LmVBCxxB1JrAX94k5fOalVGA74cNte1dp644fR+7h/7K4huDfoVbqh+arkMfg1VDEnPCMjPuox+mwR0DfDvL1niOFNwSNuSdeFqRMdj0Fcx5vG4KXCZTDlPUQIcu9VwdQnXJWqf1izh7Ol2Oi4//Y+3PX8BzMUSyt3L1x2h8kC7sHvIVO+bA9zEjN105X0RJcLkP6WM/27MyrlcfSbWAD2LOBoXySTxiv0wBuDxowo/X2nW7nTcHqu2gaabeZQGMf8/F9VI/o=',  # noqa: E501
+                 'response': 'AQy+BIv++6QaVlDQNIpd45ZIarh/0weEaGTs8a4yJE8=',
+                 'usage': 'SecretValue'
+@@ -103,7 +103,7 @@
+             'election_public_key_proof': {
+                 'challenge': 'MK6CmlcHRCeI2Fq5GZAsonlUiD6VPcZHpXzM8gFWSoU=',
+                 'commitment': 'XRoO9PiizLZ2q7UiA2887LSbAuIE/NRLpNibEh6G3BZSJfkTpIGhmOm/1Qiw2wbWqM8ndlPh64GV+D5wjzmUEchva6mwtvVNfDCsP+hm+ELAKDUH9O+tiIbpDn+uzb2Y/O4En+eh6XtFyAjh6a6kDKkuEtxVQ6KLmbDuNjc5c0Bz6vM+97uFqLoIV9nDhDAypCXOsBsrRQhkBcQ+1n1U35astAUpSM3gdRNzQdHvjO1Gh+G9eprr3uWYaMMv8m/sp4xTrLB6vno/Tbcwa1vdkzo7EeIu+xQQYuttqPgvFVhxErEaw7CHMgqVN5LBWcmI5nulvEEWYtS6m6eZ1oqB7BnLTOADIlR1f1UIL2xiCOwKqWGXhD2j4Y/XTujzE0ZGxTp8/jXLmLiH3QgW31q61KPkvPHgCLwZ5Ty9vGmRwe18hAZwPqpYaZAmcMSZX7F43pHC2UNJTp5Kr2YeHxaEi6N3cKSg1zFsL9CWBD7dGbfIAMxUsE/yKH805x/+HWm5tGf2sdxaeOvBhL29gC2g1WJdw2hNiWKDzAjjk6KlLQEgA9UgT3/93WcN5bTTrO8ETYIMAg7U8Pd1Rp6GR7wgKCox5aDZsXkOitvNMOHXWosMWl602oRGXMYN6iFUyWPdkMxpaYx2kFXx0Kc9UDH2D3stlvI0fSNykEdxBpyEdVs=',  # noqa: E501
+-                'name': 'Schnorr Proof',
++                '_name': 'Schnorr Proof',
+                 'public_key': 'b5B8KfI6Np2k4bLj5RPUGQHxdiwIo4mvPyd/tQCS1PFUrVQ/7oTZRP2tsWg50qAqIdGIjehholjWUgz6LRqSZiMRaWOaD6+GPvqVOA7W0hCBEKxca3M3qbCiRY5jCPIy1/s9cZgZtfATpNIKXpKCr9ekonPMFTbuJiiAOSZFwEIeFAi3xtVBon/NOgmRyqXPu7fUGzWNQlJAmOWMU7Xa9G/K3xlytgcvbicukuyv4aBONYzd2SNEQsO81mKDcI6fXnLbG/44pcbS6F2p2PATfMPLxTQV7cLN8+gG3FXsVt+J8+7Ou74iwoNK0/E/FtGhwqQxiLjsYasTRcXGcQfOBEvP5GpcHn+uGId9sZdCge/HPVQ1CNKA3XUOZSmEfyJirVew7PaTy9ux4YMWNliGTYGFDsIrQDilkEvUNH8P7B+9aTG2S24+gz5IuMGDZ9yEwXx4a1krk15XPsxMFmC0Asv95oueeDP6KZ2zln+9rqPhyDR9LXNYF82cGSi57oWgxdX/J7luwFrLlTbvKHneCxGaERNQZAq8KeuflqQFUrTbr6uNlRI7RfBYGkUbDkYuoX9v/kXH7FtwZMP+CVu9ntCjAQz0YT5SGQX4Qa8jSX89N1FP+caqX4ndqHw58bp0Fa6oG+GX3hlUBJeBQpYhIr8e4kWaxkzqt4P4wacYlSY=',  # noqa: E501
+                 'response': '+rqEwVYM7oQoPJtI/kuIwnoWRqUoyRANbgv58j5vwc0=',
+                 'usage': 'SecretValue'

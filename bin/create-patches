@@ -5,7 +5,7 @@ then
   mv $PATCHES_FILE $PATCHES_FILE.orig
 fi
 
-diff -ruN $ORIG_DIR $BUILD_DIR > $PATCHES_FILE
+diff -ruwN $ORIG_DIR $BUILD_DIR > $PATCHES_FILE
 
 if [[ -e $PATCHES_FILE ]]
 then

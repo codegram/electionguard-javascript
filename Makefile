@@ -2,24 +2,24 @@
 
 include Makefile.envs
 
-all: build transpile package
+all: build package
 
 install:
 	npm install uglify-es -g
 	pip install transpile strip-hints
 
 build:
-	bin/create-build
+	bin/create-build ${BUILD_DIR}
 	bin/apply-patches
 
 transpile:
 	bin/run-transpile
 
-package:
+package: transpile
 	bin/create-package
 
-dev: build
-	bin/create-orig
+dev:
+	bin/create-build ${ORIG_DIR}
 
 patches:
 	bin/create-patches
