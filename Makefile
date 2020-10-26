@@ -5,8 +5,8 @@ include Makefile.envs
 all: build package
 
 install:
-	npm install uglify-es -g
-	pip install transpile strip-hints
+	npm install uglify-es rollup -g
+	pip install transcrypt strip-hints
 
 build:
 	bin/create-build ${BUILD_DIR}
