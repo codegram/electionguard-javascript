@@ -1,3 +1,23 @@
+diff -ruwN orig/SecureRandom.js build/SecureRandom.js
+--- orig/SecureRandom.js	2020-10-27 09:31:01.000000000 +0100
++++ build/SecureRandom.js	2020-10-27 12:10:48.000000000 +0100
+@@ -1,11 +1,11 @@
+ import { bigInt } from "./BigInteger.js";
+ 
+ // Returns a secure random number below n
+-export var randomBelow = (n, bits = 256) => {
+-    const slicesCount = ~~(bits / 32);
+-    const randomNumbers = crypto.getRandomValues(new Uint32Array(slicesCount));
+-    const resultStr = randomNumbers.reduce((acc, elem) => `${acc}${elem}`);
+-    const result = bigInt(resultStr);
++export const randomBelow = (n, bits = 256) => {
++    const slicesCount = Math.ceil(bits / 8);
++    const randomNumbers = Array.from(crypto.getRandomValues(new Uint8Array(slicesCount)));
++    const resultStr = randomNumbers.map(elem => elem.toString(16).padStart(2, "0")).join("")
++    const result = bigInt(resultStr, 16);
+ 
+     if (result.lesser(n)) {
+         return result;
 diff -ruwN orig/__init__.py build/__init__.py
 --- orig/__init__.py	2020-10-27 09:31:01.000000000 +0100
 +++ build/__init__.py	2020-10-27 09:29:46.000000000 +0100
@@ -1372,7 +1392,7 @@ diff -ruwN orig/electionguard/group.py build/electionguard/group.py
 +    return a.elem.eq(b.elem)
 diff -ruwN orig/electionguard/hash.py build/electionguard/hash.py
 --- orig/electionguard/hash.py	2020-10-27 09:31:01.000000000 +0100
-+++ build/electionguard/hash.py	2020-10-27 09:29:46.000000000 +0100
++++ build/electionguard/hash.py	2020-10-27 09:42:09.000000000 +0100
 @@ -1,28 +1,13 @@
 -from abc import abstractmethod
 -from hashlib import sha256
