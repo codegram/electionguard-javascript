@@ -3,5 +3,5 @@
 rm -rf $DIST_DIR
 mkdir -p $DIST_DIR
 
-rollup $TRANSPILE_DIR/__init__.js --file $DIST_DIR/voter.js --format umd -m inline --name "voter"
+rollup -c
 uglifyjs --compress --mangle --top-level --output $DIST_DIR/voter.min.js -- $DIST_DIR/voter.js
