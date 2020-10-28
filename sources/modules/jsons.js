@@ -1,4 +1,4 @@
-import {bigInt} from './BigInteger.js';
+import * as bigInt from './BigInteger.js';
 
 function urlBase64ToBase64(str) {
   var r = str % 4;

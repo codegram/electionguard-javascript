@@ -1,13 +1,3 @@
-diff -ruwN orig/__init__.py build/__init__.py
---- orig/__init__.py	2020-10-28 12:12:03.000000000 +0100
-+++ build/__init__.py	2020-10-28 11:55:43.000000000 +0100
-@@ -1,3 +1,3 @@
- from decidim.electionguard.voter import Voter
--from tests import TestVoter
--from BigInteger import bigInt
-\ No newline at end of file
-+from tests.test_voter import TestVoter
-+import BigInteger as bigInt
 diff -ruwN orig/decidim/electionguard/common.py build/decidim/electionguard/common.py
 --- orig/decidim/electionguard/common.py	2020-10-28 12:12:03.000000000 +0100
 +++ build/decidim/electionguard/common.py	2020-10-28 10:01:57.000000000 +0100
@@ -1970,15 +1960,6 @@ diff -ruwN orig/electionguard/words.py build/electionguard/words.py
  MIN_INDEX = 0
  MAX_INDEX = 4095
  
-diff -ruwN orig/jsons.js build/jsons.js
---- orig/jsons.js	2020-10-28 12:12:03.000000000 +0100
-+++ build/jsons.js	2020-10-28 10:49:29.000000000 +0100
-@@ -1,4 +1,4 @@
--import {bigInt} from './BigInteger.js';
-+import * as bigInt from './BigInteger.js';
- 
- function urlBase64ToBase64(str) {
-   var r = str % 4;
 diff -ruwN orig/tests/test_voter.py build/tests/test_voter.py
 --- orig/tests/test_voter.py	2020-10-28 12:12:03.000000000 +0100
 +++ build/tests/test_voter.py	2020-10-28 10:01:57.000000000 +0100
