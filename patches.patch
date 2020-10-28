@@ -1,15 +1,6 @@
-diff -ruwN orig/__init__.py build/__init__.py
---- orig/__init__.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/__init__.py	2020-10-27 12:30:15.000000000 +0100
-@@ -1,3 +1,3 @@
- from decidim.electionguard.voter import Voter
--from tests import TestVoter
-+from tests.test_voter import TestVoter
- from BigInteger import bigInt
-\ No newline at end of file
 diff -ruwN orig/decidim/electionguard/common.py build/decidim/electionguard/common.py
---- orig/decidim/electionguard/common.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/decidim/electionguard/common.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/decidim/electionguard/common.py	2020-10-28 12:12:03.000000000 +0100
++++ build/decidim/electionguard/common.py	2020-10-28 10:01:57.000000000 +0100
 @@ -12,7 +12,7 @@
      #quorum: int
  
@@ -20,8 +11,8 @@ diff -ruwN orig/decidim/electionguard/common.py build/decidim/electionguard/comm
          if not self.election.is_valid():
              raise InvalidElectionDescription()
 diff -ruwN orig/decidim/electionguard/utils.py build/decidim/electionguard/utils.py
---- orig/decidim/electionguard/utils.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/decidim/electionguard/utils.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/decidim/electionguard/utils.py	2020-10-28 12:12:03.000000000 +0100
++++ build/decidim/electionguard/utils.py	2020-10-28 10:01:57.000000000 +0100
 @@ -1,45 +1,8 @@
 -from base64 import b64encode, b64decode
  from electionguard.group import ElementModP, ElementModQ
@@ -120,8 +111,8 @@ diff -ruwN orig/decidim/electionguard/utils.py build/decidim/electionguard/utils
      for contest in complete_description['contests']:
          contest['electoral_district_id'] = 'a-place'
 diff -ruwN orig/decidim/electionguard/voter.py build/decidim/electionguard/voter.py
---- orig/decidim/electionguard/voter.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/decidim/electionguard/voter.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/decidim/electionguard/voter.py	2020-10-28 12:12:03.000000000 +0100
++++ build/decidim/electionguard/voter.py	2020-10-28 10:01:57.000000000 +0100
 @@ -50,9 +50,9 @@
                  for selection in contest.ballot_selections
              ]
@@ -145,7 +136,7 @@ diff -ruwN orig/decidim/electionguard/voter.py build/decidim/electionguard/voter
          ))
 diff -ruwN orig/distutils.py build/distutils.py
 --- orig/distutils.py	1970-01-01 01:00:00.000000000 +0100
-+++ build/distutils.py	2020-10-27 12:30:15.000000000 +0100
++++ build/distutils.py	2020-10-28 10:01:57.000000000 +0100
 @@ -0,0 +1,5 @@
 +class Util:
 +    def strtobool(str):
@@ -154,8 +145,8 @@ diff -ruwN orig/distutils.py build/distutils.py
 +util = Util()
 \ No newline at end of file
 diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
---- orig/electionguard/ballot.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/ballot.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/electionguard/ballot.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/ballot.py	2020-10-28 12:14:15.000000000 +0100
 @@ -1,8 +1,6 @@
  from dataclasses import dataclass, field, replace
  from datetime import datetime
@@ -277,7 +268,15 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
              log_warning(
                  f"mismatching crypto hash: {self.object_id} expected({str(recalculated_crypto_hash)}), actual({str(self.crypto_hash)})"
              )
-@@ -317,6 +334,10 @@
+@@ -249,6 +266,7 @@
+ def _ciphertext_ballot_selection_crypto_hash_with(
+     object_id , seed_hash , ciphertext 
+ )  :
++    print(hash_elems(object_id, seed_hash, ciphertext.crypto_hash()))
+     return hash_elems(object_id, seed_hash, ciphertext.crypto_hash())
+ 
+ 
+@@ -317,6 +335,10 @@
      while complete contests are passed into ElectionGuard when running encryption on an existing dataset.
      """
  
@@ -288,7 +287,7 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
      ballot_selections  = field(
          default_factory=lambda: []
      )
-@@ -395,14 +416,19 @@
+@@ -395,14 +417,19 @@
      then it is required in order to regenerate the proof.
      """
  
@@ -314,7 +313,7 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
  
      nonce  = None
      """The nonce used to generate the encryption. Sensitive & should be treated as a secret"""
-@@ -472,6 +498,8 @@
+@@ -472,6 +499,8 @@
          Specifically, the seed hash in this context is the hash of the ContestDescription, 
          or whatever `ElementModQ` was used to populate the `description_hash` field.
          """
@@ -323,7 +322,7 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
          if seed_hash != self.description_hash:
              log_warning(
                  f"mismatching contest hash: {self.object_id} expected({str(seed_hash)}), actual({str(self.description_hash)})"
-@@ -491,6 +519,8 @@
+@@ -491,6 +520,8 @@
              log_warning(f"no proof exists for: {self.object_id}")
              return False
  
@@ -332,7 +331,7 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
          # Verify the sum of the selections matches the proof
          elgamal_accumulation = self.elgamal_accumulate()
          return self.proof.is_valid(
-@@ -589,11 +619,13 @@
+@@ -589,11 +620,13 @@
      :field object_id: A unique Ballot ID that is relevant to the external system
      """
  
@@ -350,7 +349,7 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
  
      def is_valid(self, expected_ballot_style_id )  :
          """
-@@ -633,29 +665,31 @@
+@@ -633,29 +666,31 @@
      :field object_id: A unique Ballot ID that is relevant to the external system
      """
  
@@ -398,7 +397,7 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
  
      def __eq__(self, other )  :
          return (
-@@ -741,6 +775,8 @@
+@@ -741,6 +776,8 @@
          or whatever `ElementModQ` was used to populate the `description_hash` field.
          """
  
@@ -407,7 +406,7 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
          if seed_hash != self.description_hash:
              log_warning(
                  f"mismatching ballot hash: {self.object_id} expected({str(seed_hash)}), actual({str(self.description_hash)})"
-@@ -813,7 +849,7 @@
+@@ -813,7 +850,7 @@
      def __eq__(self, other )  :
          return (
              isinstance(other, CiphertextAcceptedBallot)
@@ -417,8 +416,8 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
          )
  
 diff -ruwN orig/electionguard/chaum_pedersen.py build/electionguard/chaum_pedersen.py
---- orig/electionguard/chaum_pedersen.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/chaum_pedersen.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/electionguard/chaum_pedersen.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/chaum_pedersen.py	2020-10-28 10:01:57.000000000 +0100
 @@ -19,6 +19,8 @@
  from electionguard.nonces import Nonces
  from electionguard.proof import Proof, ProofUsage
@@ -556,8 +555,8 @@ diff -ruwN orig/electionguard/chaum_pedersen.py build/electionguard/chaum_peders
      b = pow_p(k, u)  # 𝐴^𝑢𝑖 mod 𝑝
      c = hash_elems(hash_header, alpha, beta, a, b)  # sha256(𝑄', A, B, a, b)
 diff -ruwN orig/electionguard/dlog.py build/electionguard/dlog.py
---- orig/electionguard/dlog.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/dlog.py	2020-10-27 12:30:31.000000000 +0100
+--- orig/electionguard/dlog.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/dlog.py	2020-10-28 10:07:48.000000000 +0100
 @@ -1,8 +1,5 @@
  # support for computing discrete logs, with a cache so they're never recomputed
  
@@ -590,8 +589,8 @@ diff -ruwN orig/electionguard/dlog.py build/electionguard/dlog.py
          while e != __dlog_max_elem:
              __dlog_max_exp = __dlog_max_exp + 1
 diff -ruwN orig/electionguard/election.py build/electionguard/election.py
---- orig/electionguard/election.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/election.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/electionguard/election.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/election.py	2020-10-28 10:01:57.000000000 +0100
 @@ -1,7 +1,6 @@
  from dataclasses import dataclass, field, InitVar
  from datetime import datetime
@@ -917,8 +916,8 @@ diff -ruwN orig/electionguard/election.py build/electionguard/election.py
  
  
 diff -ruwN orig/electionguard/election_builder.py build/electionguard/election_builder.py
---- orig/electionguard/election_builder.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/election_builder.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/electionguard/election_builder.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/election_builder.py	2020-10-28 10:01:57.000000000 +0100
 @@ -1,7 +1,4 @@
 -from __future__ import annotations
 -
@@ -940,8 +939,8 @@ diff -ruwN orig/electionguard/election_builder.py build/electionguard/election_b
  
      def set_public_key(self, elgamal_public_key )  :
 diff -ruwN orig/electionguard/election_object_base.py build/electionguard/election_object_base.py
---- orig/electionguard/election_object_base.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/election_object_base.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/electionguard/election_object_base.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/election_object_base.py	2020-10-28 10:01:57.000000000 +0100
 @@ -2,6 +2,7 @@
  
  from electionguard.serializable import Serializable
@@ -951,8 +950,8 @@ diff -ruwN orig/electionguard/election_object_base.py build/electionguard/electi
  @dataclass
  class ElectionObjectBase(Serializable):
 diff -ruwN orig/electionguard/elgamal.py build/electionguard/elgamal.py
---- orig/electionguard/elgamal.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/elgamal.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/electionguard/elgamal.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/elgamal.py	2020-10-28 10:01:57.000000000 +0100
 @@ -1,5 +1,3 @@
 -from typing import Iterable, NamedTuple, Optional
 -
@@ -995,8 +994,8 @@ diff -ruwN orig/electionguard/elgamal.py build/electionguard/elgamal.py
          """
          Decrypts an ElGamal ciphertext with a "known product" (the blinding factor used in the encryption).
 diff -ruwN orig/electionguard/encrypt.py build/electionguard/encrypt.py
---- orig/electionguard/encrypt.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/encrypt.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/electionguard/encrypt.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/encrypt.py	2020-10-28 10:01:57.000000000 +0100
 @@ -1,6 +1,3 @@
 -from typing import List, Optional
 -from uuid import getnode
@@ -1116,8 +1115,8 @@ diff -ruwN orig/electionguard/encrypt.py build/electionguard/encrypt.py
      encrypted_selections  = list()
  
 diff -ruwN orig/electionguard/group.py build/electionguard/group.py
---- orig/electionguard/group.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/group.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/electionguard/group.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/group.py	2020-10-28 10:24:57.000000000 +0100
 @@ -2,41 +2,35 @@
  # in the sense that performance may be less than hand-optimized C code, and no guarantees are
  # made about timing or other side-channels.
@@ -1126,7 +1125,7 @@ diff -ruwN orig/electionguard/group.py build/electionguard/group.py
 -from base64 import b16decode
 -from secrets import randbelow
 -from gmpy2 import mpz, powmod, invert, to_binary, from_binary
-+from BigInteger import bigInt
++import BigInteger as bigInt
 +from SecureRandom import randomBelow
  
 -# Constants used by ElectionGuard
@@ -1371,28 +1370,32 @@ diff -ruwN orig/electionguard/group.py build/electionguard/group.py
 -    return a.elem == b.elem
 +    return a.elem.eq(b.elem)
 diff -ruwN orig/electionguard/hash.py build/electionguard/hash.py
---- orig/electionguard/hash.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/hash.py	2020-10-27 12:30:15.000000000 +0100
-@@ -1,28 +1,13 @@
+--- orig/electionguard/hash.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/hash.py	2020-10-28 11:39:59.000000000 +0100
+@@ -1,12 +1,7 @@
 -from abc import abstractmethod
 -from hashlib import sha256
--from typing import (
++
+ from typing import (
 -    Union,
 -    Protocol,
 -    runtime_checkable,
 -    Sequence,
--)
- 
- from electionguard.group import (
--    ElementModPOrQ,
--    ElementModQ,
--    Q_MINUS_ONE,
--    int_to_q_unchecked,
--    ElementModP,
-+    int_to_q_unchecked
++    Sequence
  )
- 
 -
+ from electionguard.group import (
+     ElementModPOrQ,
+     ElementModQ,
+@@ -14,15 +9,16 @@
+     int_to_q_unchecked,
+     ElementModP,
+ )
++import BigInteger as bigInt
++from Hash import sha256
+ 
++mpz = bigInt
+ 
 -@runtime_checkable
 -class CryptoHashable(Protocol):
 +class CryptoHashable:
@@ -1404,7 +1407,7 @@ diff -ruwN orig/electionguard/hash.py build/electionguard/hash.py
      def crypto_hash(self)  :
          """
          Generates a hash given the fields on the implementing instance.
-@@ -30,13 +15,11 @@
+@@ -30,13 +26,11 @@
          ...
  
  
@@ -1419,7 +1422,7 @@ diff -ruwN orig/electionguard/hash.py build/electionguard/hash.py
      def crypto_hash_with(self, seed_hash )  :
          """
          Generates a hash with a given seed that can be checked later against the seed and class metadata.
-@@ -44,16 +27,7 @@
+@@ -44,16 +38,7 @@
          ...
  
  
@@ -1437,47 +1440,30 @@ diff -ruwN orig/electionguard/hash.py build/electionguard/hash.py
  
  def hash_elems(*a )  :
      """
-@@ -65,34 +39,6 @@
-     :param a: Zero or more elements of any of the accepted types.
+@@ -66,7 +51,7 @@
      :return: A cryptographic hash of these elements, concatenated.
      """
--    h = sha256()
+     h = sha256()
 -    h.update("|".encode("utf-8"))
--    for x in a:
--        # We could just use str(x) for everything, but then we'd have a resulting string
--        # that's a bit Python-specific, and we'd rather make it easier for other languages
--        # to exactly match this hash function.
--
--        if not x:
--            # This case captures empty lists and None, nicely guaranteeing that we don't
--            # need to do a recursive call if the list is empty. So we need a string to
--            # feed in for both of these cases. "None" would be a Python-specific thing,
--            # so we'll go with the more JSON-ish "null".
--            hash_me = "null"
--
--        elif isinstance(x, ElementModP) or isinstance(x, ElementModQ):
--            hash_me = x.to_hex()
--        elif isinstance(x, CryptoHashable):
--            hash_me = x.crypto_hash().to_hex()
--        elif isinstance(x, str):
--            # strings are iterable, so it's important to handle them before the following check
--            hash_me = x
--        elif isinstance(x, Sequence):
--            # The simplest way to deal with lists, tuples, and such are to crunch them recursively.
--            hash_me = hash_elems(*x).to_hex()
--        else:
--            hash_me = str(x)
++    h.update("|")
+     for x in a:
+         # We could just use str(x) for everything, but then we'd have a resulting string
+         # that's a bit Python-specific, and we'd rather make it easier for other languages
+@@ -91,8 +76,9 @@
+             hash_me = hash_elems(*x).to_hex()
+         else:
+             hash_me = str(x)
 -        h.update((hash_me + "|").encode("utf-8"))
--
--    # We don't need the checked version of int_to_q, because the
--    # modulo operation here guarantees that we're in bounds.
++        h.update((hash_me + "|"))
+ 
+     # We don't need the checked version of int_to_q, because the
+     # modulo operation here guarantees that we're in bounds.
 -    return int_to_q_unchecked(int.from_bytes(h.digest(), byteorder="big") % Q_MINUS_ONE)
-+    # TO-DO: implement this
-+    return int_to_q_unchecked(randint(0, 2**164 - 1))
++    return int_to_q_unchecked(mpz(h.digest(), 16).mod(Q_MINUS_ONE))
 +
 diff -ruwN orig/electionguard/logs.py build/electionguard/logs.py
---- orig/electionguard/logs.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/logs.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/electionguard/logs.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/logs.py	2020-10-28 10:01:57.000000000 +0100
 @@ -1,14 +1,11 @@
 -import inspect
 -import logging
@@ -1635,8 +1621,8 @@ diff -ruwN orig/electionguard/logs.py build/electionguard/logs.py
 -    LOG.critical(msg, *args, **kwargs)
 +    LOG.critical(msg)
 diff -ruwN orig/electionguard/nonces.py build/electionguard/nonces.py
---- orig/electionguard/nonces.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/nonces.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/electionguard/nonces.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/nonces.py	2020-10-28 10:01:57.000000000 +0100
 @@ -1,10 +1,8 @@
 -from typing import Union, Sequence, List, overload
 -
@@ -1682,8 +1668,8 @@ diff -ruwN orig/electionguard/nonces.py build/electionguard/nonces.py
      def __len__(self)  :
          raise TypeError("Nonces does not have finite length")
 diff -ruwN orig/electionguard/proof.py build/electionguard/proof.py
---- orig/electionguard/proof.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/proof.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/electionguard/proof.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/proof.py	2020-10-28 10:01:57.000000000 +0100
 @@ -16,10 +16,10 @@
  class Proof(Serializable):
      """Base class for proofs with name and usage case"""
@@ -1698,8 +1684,8 @@ diff -ruwN orig/electionguard/proof.py build/electionguard/proof.py
 +            self, "_name", space_between_capitals(self.__class__.__name__)
          )
 diff -ruwN orig/electionguard/serializable.py build/electionguard/serializable.py
---- orig/electionguard/serializable.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/serializable.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/electionguard/serializable.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/serializable.py	2020-10-28 10:01:57.000000000 +0100
 @@ -1,29 +1,14 @@
  from dataclasses import dataclass
  from datetime import datetime
@@ -1924,24 +1910,24 @@ diff -ruwN orig/electionguard/serializable.py build/electionguard/serializable.p
 -    return datetime.fromisoformat(tz_corrected)
 +    return parse_json_object(data, class_out)
 diff -ruwN orig/electionguard/singleton.py build/electionguard/singleton.py
---- orig/electionguard/singleton.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/singleton.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/electionguard/singleton.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/singleton.py	2020-10-28 10:01:57.000000000 +0100
 @@ -1,4 +1,3 @@
 -from typing import Any
  
  
  class Singleton:
 diff -ruwN orig/electionguard/tracker.py build/electionguard/tracker.py
---- orig/electionguard/tracker.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/tracker.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/electionguard/tracker.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/tracker.py	2020-10-28 10:01:57.000000000 +0100
 @@ -1,4 +1,3 @@
 -from typing import List, Optional
  from electionguard.hash import hash_elems
  from electionguard.group import ElementModQ
  from electionguard.words import get_word
 diff -ruwN orig/electionguard/utils.py build/electionguard/utils.py
---- orig/electionguard/utils.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/utils.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/electionguard/utils.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/utils.py	2020-10-28 10:01:57.000000000 +0100
 @@ -1,10 +1,5 @@
  from datetime import datetime, timezone
 -from os import mkdir, path
@@ -1966,8 +1952,8 @@ diff -ruwN orig/electionguard/utils.py build/electionguard/utils.py
      return int(ticks)
  
 diff -ruwN orig/electionguard/words.py build/electionguard/words.py
---- orig/electionguard/words.py	2020-10-27 12:30:49.000000000 +0100
-+++ build/electionguard/words.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/electionguard/words.py	2020-10-28 12:12:03.000000000 +0100
++++ build/electionguard/words.py	2020-10-28 10:01:57.000000000 +0100
 @@ -1,5 +1,3 @@
 -from typing import Optional
 -
@@ -1975,8 +1961,8 @@ diff -ruwN orig/electionguard/words.py build/electionguard/words.py
  MAX_INDEX = 4095
  
 diff -ruwN orig/tests/test_voter.py build/tests/test_voter.py
---- orig/tests/test_voter.py	2020-10-27 12:30:50.000000000 +0100
-+++ build/tests/test_voter.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/tests/test_voter.py	2020-10-28 12:12:03.000000000 +0100
++++ build/tests/test_voter.py	2020-10-28 10:01:57.000000000 +0100
 @@ -1,9 +1,8 @@
 -import unittest
  from tests.utils import create_election_test_message, joint_election_key_test_message
@@ -2005,8 +1991,8 @@ diff -ruwN orig/tests/test_voter.py build/tests/test_voter.py
 -if __name__ == '__main__':
 -    unittest.main()
 diff -ruwN orig/tests/utils.py build/tests/utils.py
---- orig/tests/utils.py	2020-10-27 12:30:50.000000000 +0100
-+++ build/tests/utils.py	2020-10-27 12:30:15.000000000 +0100
+--- orig/tests/utils.py	2020-10-28 12:12:03.000000000 +0100
++++ build/tests/utils.py	2020-10-28 10:01:57.000000000 +0100
 @@ -10,7 +10,7 @@
              {'name': 'clara', 'public_key': '...'}
          ],
