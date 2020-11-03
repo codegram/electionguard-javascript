@@ -1,4 +1,4 @@
-import { bigInt } from "./BigInteger.js";
+import * as bigInt from './BigInteger.js';
 
 // Returns a secure random number below n
 export const randomBelow = (n, bytes_number = 32) => {

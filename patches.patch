@@ -146,7 +146,7 @@ diff -ruwN orig/distutils.py build/distutils.py
 \ No newline at end of file
 diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
 --- orig/electionguard/ballot.py	2020-10-28 12:12:03.000000000 +0100
-+++ build/electionguard/ballot.py	2020-10-28 12:14:15.000000000 +0100
++++ build/electionguard/ballot.py	2020-10-28 12:39:42.000000000 +0100
 @@ -1,8 +1,6 @@
  from dataclasses import dataclass, field, replace
  from datetime import datetime
@@ -268,15 +268,7 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
              log_warning(
                  f"mismatching crypto hash: {self.object_id} expected({str(recalculated_crypto_hash)}), actual({str(self.crypto_hash)})"
              )
-@@ -249,6 +266,7 @@
- def _ciphertext_ballot_selection_crypto_hash_with(
-     object_id , seed_hash , ciphertext 
- )  :
-+    print(hash_elems(object_id, seed_hash, ciphertext.crypto_hash()))
-     return hash_elems(object_id, seed_hash, ciphertext.crypto_hash())
- 
- 
-@@ -317,6 +335,10 @@
+@@ -317,6 +334,10 @@
      while complete contests are passed into ElectionGuard when running encryption on an existing dataset.
      """
  
@@ -287,7 +279,7 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
      ballot_selections  = field(
          default_factory=lambda: []
      )
-@@ -395,14 +417,19 @@
+@@ -395,14 +416,19 @@
      then it is required in order to regenerate the proof.
      """
  
@@ -313,7 +305,7 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
  
      nonce  = None
      """The nonce used to generate the encryption. Sensitive & should be treated as a secret"""
-@@ -472,6 +499,8 @@
+@@ -472,6 +498,8 @@
          Specifically, the seed hash in this context is the hash of the ContestDescription, 
          or whatever `ElementModQ` was used to populate the `description_hash` field.
          """
@@ -322,7 +314,7 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
          if seed_hash != self.description_hash:
              log_warning(
                  f"mismatching contest hash: {self.object_id} expected({str(seed_hash)}), actual({str(self.description_hash)})"
-@@ -491,6 +520,8 @@
+@@ -491,6 +519,8 @@
              log_warning(f"no proof exists for: {self.object_id}")
              return False
  
@@ -331,7 +323,7 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
          # Verify the sum of the selections matches the proof
          elgamal_accumulation = self.elgamal_accumulate()
          return self.proof.is_valid(
-@@ -589,11 +620,13 @@
+@@ -589,11 +619,13 @@
      :field object_id: A unique Ballot ID that is relevant to the external system
      """
  
@@ -349,7 +341,7 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
  
      def is_valid(self, expected_ballot_style_id )  :
          """
-@@ -633,29 +666,31 @@
+@@ -633,29 +665,31 @@
      :field object_id: A unique Ballot ID that is relevant to the external system
      """
  
@@ -397,7 +389,7 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
  
      def __eq__(self, other )  :
          return (
-@@ -741,6 +776,8 @@
+@@ -741,6 +775,8 @@
          or whatever `ElementModQ` was used to populate the `description_hash` field.
          """
  
@@ -406,7 +398,7 @@ diff -ruwN orig/electionguard/ballot.py build/electionguard/ballot.py
          if seed_hash != self.description_hash:
              log_warning(
                  f"mismatching ballot hash: {self.object_id} expected({str(seed_hash)}), actual({str(self.description_hash)})"
-@@ -813,7 +850,7 @@
+@@ -813,7 +849,7 @@
      def __eq__(self, other )  :
          return (
              isinstance(other, CiphertextAcceptedBallot)
@@ -1116,7 +1108,7 @@ diff -ruwN orig/electionguard/encrypt.py build/electionguard/encrypt.py
  
 diff -ruwN orig/electionguard/group.py build/electionguard/group.py
 --- orig/electionguard/group.py	2020-10-28 12:12:03.000000000 +0100
-+++ build/electionguard/group.py	2020-10-28 10:24:57.000000000 +0100
++++ build/electionguard/group.py	2020-10-28 12:42:55.000000000 +0100
 @@ -2,41 +2,35 @@
  # in the sense that performance may be less than hand-optimized C code, and no guarantees are
  # made about timing or other side-channels.
@@ -1224,8 +1216,57 @@ diff -ruwN orig/electionguard/group.py build/electionguard/group.py
  
  def hex_to_q(input )  :
      """
-@@ -214,21 +211,6 @@
-     m = mpz(int(i))
+@@ -159,9 +156,9 @@
+     Returns `None` if the number is out of the allowed
+     [0,Q) range.
+     """
+-    i = int(input, 16)
++    i = mpz(input, 16)
+     if 0 <= i < Q:
+-        return ElementModQ(mpz(i))
++        return ElementModQ(i)
+     else:
+         return None
+ 
+@@ -172,9 +169,9 @@
+     Returns `None` if the number is out of the allowed
+     [0,Q) range.
+     """
+-    i = int(input)
++    i = mpz(input)
+     if 0 <= i < Q:
+-        return ElementModQ(mpz(i))
++        return ElementModQ(i)
+     else:
+         return None
+ 
+@@ -187,7 +184,7 @@
+     you're absolutely, positively, certain the input is in-bounds.
+     """
+ 
+-    m = mpz(int(i))
++    m = mpz(i)
+     return ElementModQ(m)
+ 
+ 
+@@ -197,9 +194,9 @@
+     Returns `None` if the number is out of the allowed
+     [0,P) range.
+     """
+-    i = int(input)
++    i = mpz(input)
+     if 0 <= i < P:
+-        return ElementModP(mpz(i))
++        return ElementModP(i)
+     else:
+         return None
+ 
+@@ -211,24 +208,9 @@
+     element (i.e., outside of [0,P)). Useful for tests or if
+     you're absolutely, positively, certain the input is in-bounds.
+     """
+-    m = mpz(int(i))
++    m = mpz(i)
      return ElementModP(m)
  
 -
